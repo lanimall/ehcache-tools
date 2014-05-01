@@ -16,27 +16,29 @@ public class cacheKeysPrint {
 				name=args[0];
 			}
 
-			CacheManager cmgr = new CacheManager();
-			String[] cname= cmgr.getCacheNames();
 			if (name == null){
-				for (int i=0; i< cname.length ; i++){
-					Cache cache = cmgr.getCache(cname[i]);
+				System.out.println("No cache name defined. Doing nothing.");
+			} else {
+				CacheManager cmgr = CacheManagerDecorator.getInstance().getCacheManager();
+				if("all".equalsIgnoreCase(name)){
+					System.out.println("Requested to clear all caches...");
+					String[] cname= cmgr.getCacheNames();
+					for (int i=0; i< cname.length ; i++){
+						Cache cache = cmgr.getCache(cname[i]);
+						printKeys(cache);
+					}
+				} else {
+					Cache cache = cmgr.getCache(name);
 					printKeys(cache);
 				}
-			}else{
-				Cache cache = cmgr.getCache(name);
-
-				printKeys(cache);
 			}
-
 		}catch(Exception ex){
 			System.out.println(ex);
 		}
-
 	}
 
 	public  static void printKeys(Cache cache) throws Exception{
-		List<String> cacheKeyList = cache.getKeys();
+		List<String> cacheKeyList = cache.getKeysWithExpiryCheck();
 		System.out.println("Listing Keys for cache "+cache.getName() +" Size = "+cacheKeyList.size() );
 		Iterator<String> iterator = cacheKeyList.iterator();
 		while (iterator.hasNext()) {

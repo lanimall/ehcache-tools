@@ -6,7 +6,7 @@ import net.sf.ehcache.Element;
 
 public class cachePut {
 	public static void main(String args[]){
-		CacheManager cacheManager = CacheManager.getInstance();
+		CacheManager cacheManager = CacheManagerDecorator.getInstance().getCacheManager();
 
 		Cache myCache = cacheManager.getCache("knowledgeBases");
 		for (int i = 0; i < 1000; i++) {

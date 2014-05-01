@@ -15,7 +15,7 @@ public class cacheSize {
 				System.out.println("Print stats with wait interval of "+sleep);
 			}
 
-			CacheManager cmgr = new CacheManager();
+			CacheManager cmgr = CacheManagerDecorator.getInstance().getCacheManager();
 			boolean loop=true;
 			while(loop){
 

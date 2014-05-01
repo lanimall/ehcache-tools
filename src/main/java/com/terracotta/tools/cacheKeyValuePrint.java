@@ -30,7 +30,7 @@ public class cacheKeyValuePrint {
 
 				}
 
-			CacheManager cmgr = new CacheManager();
+			CacheManager cmgr = CacheManagerDecorator.getInstance().getCacheManager();
 			Cache cache = cmgr.getCache(cacheName);
 			if (cache == null){
 				System.out.println("Cache "+cacheName+ "not found.");
@@ -42,16 +42,10 @@ public class cacheKeyValuePrint {
 			}else{
 				printKeyValue(cache,key);
 			}
-
-
-
-
 		}catch (Exception ex){
 			System.out.println(ex);
 		}
-
 	}
-
 
 	private static void printAllValues(Cache cache){
 		List<String> cacheKeyList = cache.getKeys();
@@ -60,7 +54,6 @@ public class cacheKeyValuePrint {
 		while (iterator.hasNext()) {
 			printKeyValue(cache, iterator.next());
 		}
-
 	}
 
 	private static void printKeyValue(Cache cache, String key){
@@ -70,10 +63,7 @@ public class cacheKeyValuePrint {
 		}else{
 			System.out.println("Key not found "+key);
 		}
-
 	}
-
-
 
 	private static void printValue(Element e){
 		if (e !=  null){
@@ -92,11 +82,6 @@ public class cacheKeyValuePrint {
 			if (e.getObjectValue() == null){
 				System.out.println("Value is null");
 			}
-
-
-
-
 		}
-
 	}
 }

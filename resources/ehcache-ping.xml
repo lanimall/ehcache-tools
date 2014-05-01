@@ -23,8 +23,6 @@
         <terracotta/>
     </cache>
 
-
-
-    <terracottaConfig url="localhost:9510"/>
+    <terracottaConfig url="${tc.connect.servers}"/>
 </ehcache>
 

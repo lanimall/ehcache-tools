@@ -17,6 +17,7 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<tc-connect-servers>tcvm:9510,tcvm:9610</tc-connect-servers>
+		<junit.version>4.11</junit.version>
 	</properties>
 
 	<developers>
@@ -57,17 +58,8 @@
 	</dependencies>
 
 	<build>
-<!--
-		<resources>
-			<resource>
-				<directory>src/main/resources</directory>
-				<filtering>true</filtering>
-				<includes>
-					<include>**/*</include>
-				</includes>
-			</resource>
-		</resources>
--->
+		<!-- <resources> <resource> <directory>src/main/resources</directory> <filtering>true</filtering> 
+			<includes> <include>**/*</include> </includes> </resource> </resources> -->
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
@@ -106,21 +98,21 @@
 				</configuration>
 			</plugin>
 			<plugin>
-  				<groupId>org.apache.maven.plugins</groupId>
-  				<artifactId>maven-assembly-plugin</artifactId>
-  				<configuration>
-    								<descriptor>src/assembly/bin.xml</descriptor>
-    								<finalName>ehcache-tools</finalName>
-  				</configuration>
-  				<executions>
-    								<execution>
-      								<phase>package</phase>
-      								<goals>
-        								<goal>single</goal>
-      								</goals>
-    								</execution>
-  				</executions>
-				</plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<descriptor>src/assembly/bin.xml</descriptor>
+					<finalName>ehcache-tools</finalName>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -133,10 +125,7 @@
 			<properties>
 				<ehcache-core-ee.version>2.6.8</ehcache-core-ee.version>
 				<ehcache-terracotta-ee.version>2.6.8</ehcache-terracotta-ee.version>
-				<toolkit.version>5.7.0</toolkit.version>
 				<slf4j.version>1.6.1</slf4j.version>
-				<junit.version>4.6</junit.version>
-				<!-- <net.sf.ehcache.configurationResourceName>ehcache-bm-l2only.xml</net.sf.ehcache.configurationResourceName>-->
 			</properties>
 			<dependencies>
 				<!-- EhCache -->
@@ -150,11 +139,6 @@
 					<groupId>net.sf.ehcache</groupId>
 					<artifactId>ehcache-terracotta-ee</artifactId>
 					<version>${ehcache-terracotta-ee.version}</version>
-				</dependency>
-				<dependency>
-					<groupId>org.terracotta</groupId>
-					<artifactId>terracotta-toolkit-1.6-runtime-ee</artifactId>
-					<version>${toolkit.version}</version>
 				</dependency>
 
 				<!-- SLF4J -->
@@ -174,20 +158,12 @@
 		<profile>
 			<id>ehcache-2.7.x</id>
 			<properties>
-				<bigmemory.version>4.0.2</bigmemory.version>
 				<ehcache-ee.version>2.7.2</ehcache-ee.version>
 				<toolkit.version>4.0.2</toolkit.version>
 				<slf4j.version>1.7.1</slf4j.version>
-				<junit.version>4.11</junit.version>
-				<net.sf.ehcache.configurationResourceName>ehcache.xml</net.sf.ehcache.configurationResourceName>
 			</properties>
 			<dependencies>
 				<!-- EhCache -->
-				<!-- <dependency>
-					<groupId>org.terracotta.bigmemory</groupId>
-					<artifactId>bigmemory</artifactId>
-					<version>${bigmemory.version}</version>
-				</dependency> -->
 				<dependency>
 					<groupId>net.sf.ehcache</groupId>
 					<artifactId>ehcache-ee</artifactId>
