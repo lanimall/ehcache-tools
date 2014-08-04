@@ -1,10 +1,10 @@
 package com.terracotta.tools;
 
-import java.util.Iterator;
-import java.util.List;
-
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
+
+import java.util.Iterator;
+import java.util.List;
 
 public class cacheKeysPrint {
 
@@ -19,9 +19,9 @@ public class cacheKeysPrint {
 			if (name == null){
 				System.out.println("No cache name defined. Doing nothing.");
 			} else {
-				CacheManager cmgr = CacheManagerDecorator.getInstance().getCacheManager();
-				if("all".equalsIgnoreCase(name)){
-					System.out.println("Requested to clear all caches...");
+                CacheManager cmgr = CacheFactory.getInstance().getCacheManager();
+                if ("all".equalsIgnoreCase(name)) {
+                    System.out.println("Requested to clear all caches...");
 					String[] cname= cmgr.getCacheNames();
 					for (int i=0; i< cname.length ; i++){
 						Cache cache = cmgr.getCache(cname[i]);

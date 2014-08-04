@@ -5,14 +5,14 @@ import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 
 public class cachePut {
-	public static void main(String args[]){
-		CacheManager cacheManager = CacheManagerDecorator.getInstance().getCacheManager();
+    public static void main(String args[]) {
+        CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
 
-		Cache myCache = cacheManager.getCache("knowledgeBases");
-		for (int i = 0; i < 1000; i++) {
-			String key = new Integer(i).toString();
+        Cache myCache = cacheManager.getCache("knowledgeBases");
+        for (int i = 0; i < 1000; i++) {
+            String key = new Integer(i).toString();
 
-			myCache.put(new Element(key, "Valueweroiuwewejoiwqeurwqwljefwuer0ldnhwqierufweoriwef"));
-		}
-	}
+            myCache.put(new Element(key, "Valueweroiuwewejoiwqeurwqwljefwuer0ldnhwqierufweoriwef"));
+        }
+    }
 }

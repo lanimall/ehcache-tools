@@ -1,35 +1,34 @@
 package com.terracotta.tools;
 
-import java.net.MalformedURLException;
-import java.net.URL;
-
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.MalformedURLException;
+import java.net.URL;
 
 /**
  * @author Fabien Sanglier
  * singleton
  */
-public class CacheManagerDecorator {
-	private static Logger log = LoggerFactory.getLogger(CacheManagerDecorator.class);
+public class CacheFactory {
+    private static Logger log = LoggerFactory.getLogger(CacheFactory.class);
 
 	public static final String ENV_CACHE_CONFIGPATH = "ehcache.config.path";
 	private URL ehcacheURL;
 
-	private CacheManagerDecorator() {
-		String configLocationToLoad = null;
-		if(null != System.getProperty(ENV_CACHE_CONFIGPATH)){
+    private CacheFactory() {
+        String configLocationToLoad = null;
+        if(null != System.getProperty(ENV_CACHE_CONFIGPATH)){
 			configLocationToLoad = System.getProperty(ENV_CACHE_CONFIGPATH);
 		}
 
 		if(null != configLocationToLoad){
 			if(configLocationToLoad.indexOf("classpath:") > -1){
-				ehcacheURL = CacheManagerDecorator.class.getClassLoader().getResource(configLocationToLoad.substring("classpath:".length()));
-			} else {
-				try {
+                ehcacheURL = CacheFactory.class.getClassLoader().getResource(configLocationToLoad.substring("classpath:".length()));
+            } else {
+                try {
 					ehcacheURL = new URL(configLocationToLoad);
 				} catch (MalformedURLException e) {
 					log.error("Could not create a valid URL from " + configLocationToLoad, e);
@@ -42,15 +41,15 @@ public class CacheManagerDecorator {
 		}
 	}
 
-	private static class CacheManagerDecoratorHolder {
-		public static CacheManagerDecorator cacheManagerDecorator = new CacheManagerDecorator();
-	}
+    private static class CacheFactoryHolder {
+        public static CacheFactory cacheManagerDecorator = new CacheFactory();
+    }
 
-	public static CacheManagerDecorator getInstance() {
-		return CacheManagerDecoratorHolder.cacheManagerDecorator;
-	}
-	
-	public CacheManager getCacheManager() {
+    public static CacheFactory getInstance() {
+        return CacheFactoryHolder.cacheManagerDecorator;
+    }
+
+    public CacheManager getCacheManager() {
 		if(null != ehcacheURL)
 			return CacheManager.create(ehcacheURL);
 		else 
