@@ -42,12 +42,14 @@ TC_CONNECT_URL="localhost:9510"
 CLASSPATH_PREFIX=
 ############ custom section based on what needs to be looked into #####################
 
-#add path to license key here
-TC_LICENSEKEY_PATH=${HOME}/terracotta-license.key
+#specify TC_LICENSEKEY_PATH with the folder location of the license key
+TC_LICENSEKEY=${TC_LICENSEKEY_PATH}/terracotta-license.key
 
-if [ ! -f ${TC_LICENSEKEY_PATH} ]; then
-  TC_LICENSEKEY_PATH=${BASEDIR}/config/terracotta-license.key
+#if not defined or does not exist, try in the base directory
+if [ ! -f ${TC_LICENSEKEY} ]; then
+  TC_LICENSEKEY=${BASEDIR}/terracotta-license.key
 fi
+
 # OS specific support.  $var _must_ be set to either true or false.
 cygwin=false;
 darwin=false;
@@ -119,8 +121,9 @@ if $cygwin; then
   [ -n "$CONFIG" ] && CONFIG=`cygpath --path --windows "$CONFIG"`
 fi
 
-JAVA_OPTS="$JAVA_OPTS -Xms128m -Xmx256m -XX:MaxDirectMemorySize=10G -Dcom.tc.productkey.path=${TC_LICENSEKEY_PATH} -Dtc.connect.servers=${TC_CONNECT_URL} -Dehcache.config.path=${EHCACHE_CONFIG_PATH}"
+JAVA_OPTS="$JAVA_OPTS -Xms128m -Xmx256m -XX:MaxDirectMemorySize=10G -Dcom.tc.productkey.path=${TC_LICENSEKEY} -Dtc.connect.servers=${TC_CONNECT_URL} -Dehcache.config.path=${EHCACHE_CONFIG_PATH}"
 
 exec "$JAVACMD" $JAVA_OPTS \
   -classpath "$CLASSPATH" \
+  -Dbasedir="$BASEDIR" \
   com.terracotta.tools.$@

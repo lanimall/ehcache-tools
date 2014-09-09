@@ -7,7 +7,7 @@
 
 	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>log/tc-nr-plugin.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<fileNamePattern>${basedir}/log/ehcacheTools.%d{yyyy-MM-dd}.log</fileNamePattern>
 			<maxHistory>30</maxHistory>
 		</rollingPolicy>
 		<encoder>
