@@ -31,7 +31,7 @@
     </fileSet>
     <fileSet>
       <directory>${project.build.directory}</directory>
-      <outputDirectory>lib</outputDirectory>
+      <outputDirectory>libs</outputDirectory>
       <includes>
         <include>*.jar</include>
       </includes>
@@ -41,7 +41,7 @@
     <dependencySet>
         <unpack>false</unpack>
         <scope>runtime</scope>
-        <outputDirectory>lib</outputDirectory>
+        <outputDirectory>libs</outputDirectory>
     </dependencySet>
 </dependencySets>
 </assembly>

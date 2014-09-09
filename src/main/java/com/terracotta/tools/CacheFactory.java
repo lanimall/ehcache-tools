@@ -29,7 +29,11 @@ public class CacheFactory {
                 ehcacheURL = CacheFactory.class.getClassLoader().getResource(configLocationToLoad.substring("classpath:".length()));
             } else {
                 try {
-					ehcacheURL = new URL(configLocationToLoad);
+                    //if no protocol is supplied, default to "file:" protocol (Since protocol is mandatory for URL)
+                    if(configLocationToLoad.indexOf(':') == -1)
+                        configLocationToLoad = "file:" + configLocationToLoad;
+
+                    ehcacheURL = new URL(configLocationToLoad);
 				} catch (MalformedURLException e) {
 					log.error("Could not create a valid URL from " + configLocationToLoad, e);
 					ehcacheURL = null;

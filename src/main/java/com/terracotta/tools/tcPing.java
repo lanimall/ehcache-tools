@@ -46,13 +46,14 @@ public class tcPing {
             }
 
             if (step == 1) {
-                System.out.println("Starting Step 1 of Ping..");
+                System.out.println("Starting Step 1 of tcPing..");
                 step1(pingCache, uid, count);
+                System.out.println("Step 1 of tcPing done..");
                 Thread.sleep(1000);
             } else {
-                System.out.println("Starting Step 2 of Ping..");
+                System.out.println("Starting Step 2 of tcPing..");
                 step2(pingCache, uid, count);
-                System.out.println("Terracotta Ping Succesful");
+                System.out.println("Step 2 of tcPing done..");
             }
 
             cacheManager.shutdown();
