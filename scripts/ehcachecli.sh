@@ -3,6 +3,7 @@
 #
 # All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
 #
+
 case "$1" in
   ""|"--help"|"-h"|"-?")
     echo "Syntax: $0 [cacheKeyValuePrint|cacheKeysPrint|cacheSize] [arguments.....]"
@@ -31,23 +32,8 @@ done
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." > /dev/null; pwd`
 
-############ custom section based on what needs to be looked into #####################
-#path to ehcache config
-EHCACHE_CONFIG_PATH=${BASEDIR}/config/ehcache.xml
-
-#add terracotta url here
-TC_CONNECT_URL="localhost:9510"
-
-#extra custom classpath dependencies to add
-CLASSPATH_PREFIX=
-############ custom section based on what needs to be looked into #####################
-
-#specify TC_LICENSEKEY_PATH with the folder location of the license key
-TC_LICENSEKEY=${TC_LICENSEKEY_PATH}/terracotta-license.key
-
-#if not defined or does not exist, try in the base directory
-if [ ! -f ${TC_LICENSEKEY} ]; then
-  TC_LICENSEKEY=${BASEDIR}/terracotta-license.key
+if [ -f "${BASEDIR}/bin/setenv.sh" ]; then
+  . "${BASEDIR}/bin/setenv.sh"
 fi
 
 # OS specific support.  $var _must_ be set to either true or false.
@@ -121,7 +107,13 @@ if $cygwin; then
   [ -n "$CONFIG" ] && CONFIG=`cygpath --path --windows "$CONFIG"`
 fi
 
-JAVA_OPTS="$JAVA_OPTS -Xms128m -Xmx256m -XX:MaxDirectMemorySize=10G -Dcom.tc.productkey.path=${TC_LICENSEKEY} -Dtc.connect.servers=${TC_CONNECT_URL} -Dehcache.config.path=${EHCACHE_CONFIG_PATH}"
+JAVA_OPTS="${JAVA_OPTS} -Xms128m -Xmx256m -XX:MaxDirectMemorySize=10G"
+JAVA_OPTS="${JAVA_OPTS} -Dehcache.config.path=${EHCACHE_CONFIG_PATH}"
+
+#if not defined or does not exist, try in the base directory
+if [ -f ${TC_LICENSEKEY} ]; then
+  JAVA_OPTS="${JAVA_OPTS} -Dcom.tc.productkey.path=${TC_LICENSEKEY}"
+fi
 
 exec "$JAVACMD" $JAVA_OPTS \
   -classpath "$CLASSPATH" \

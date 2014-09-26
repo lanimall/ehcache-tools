@@ -1,9 +1,14 @@
 package com.terracotta.tools;
 
+import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class cacheClear {
+    private static Logger log = LoggerFactory.getLogger(cacheClear.class);
+
     public static void main(String args[]) {
         String name = null;
         try {
@@ -11,27 +16,31 @@ public class cacheClear {
                 name = args[0];
             }
 
+            CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
             if (name == null) {
                 System.out.println("No cache name defined. Doing nothing.");
             } else {
-                CacheManager cmgr = CacheFactory.getInstance().getCacheManager();
                 if ("all".equalsIgnoreCase(name)) {
                     System.out.println("Requested to clear all caches...");
-                    String[] cname = cmgr.getCacheNames();
+                    String[] cname = cacheManager.getCacheNames();
                     for (int i = 0; i < cname.length; i++) {
-                        Cache cache = cmgr.getCache(cname[i]);
+                        Cache cache = cacheManager.getCache(cname[i]);
                         clearCache(cache);
                     }
                 } else {
-                    Cache cache = cmgr.getCache(name);
+                    Cache cache = cacheManager.getCache(name);
                     clearCache(cache);
                 }
 
                 System.out.println("Checking cache sizes now...");
                 cacheSize.main(new String[]{"5000"});
             }
+
+            CacheFactory.getInstance().getCacheManager().shutdown();
+            System.exit(0);
         } catch (Exception ex) {
-            System.out.println(ex);
+            log.error("", ex);
+            System.exit(1);
         }
     }
 

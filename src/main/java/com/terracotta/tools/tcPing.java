@@ -1,13 +1,17 @@
 package com.terracotta.tools;
 
+import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class tcPing {
+    private static Logger log = LoggerFactory.getLogger(tcPing.class);
 
     private static void usage() {
         System.out
@@ -59,7 +63,7 @@ public class tcPing {
             cacheManager.shutdown();
             System.exit(0);
         } catch (Exception ex) {
-            System.out.println(ex);
+            log.error("", ex);
             System.exit(1);
         }
     }
