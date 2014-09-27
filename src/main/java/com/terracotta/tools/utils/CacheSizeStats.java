@@ -13,20 +13,17 @@ public class CacheSizeStats implements Cloneable {
     private static final NumberFormat nf = NumberFormat.getInstance();
     private static final Logger log = LoggerFactory.getLogger(CacheSizeStats.class);
 
-    private final String cacheName;
-    private final HashSet<String> cacheItemTypes = new HashSet<String>();
+    private final HashSet<String> objectTypes = new HashSet<String>();
     private long objCount;
     private long totalSize;
     private long minSize, maxSize;
 
-    public CacheSizeStats(String cacheName) {
-        this.cacheName = cacheName;
+    public CacheSizeStats() {
         reset();
     }
 
     public CacheSizeStats(CacheSizeStats stat) {
         if (stat != null) {
-            this.cacheName = stat.cacheName;
             init(stat.getObjCount(), stat.getTotalSize(), stat.getMinSize(), stat.getMaxSize());
         } else {
             throw new IllegalArgumentException("Stat may not be null");
@@ -34,7 +31,7 @@ public class CacheSizeStats implements Cloneable {
     }
 
     /**
-     * resets the stats to {@link init()}
+     * resets the stats
      */
     public void reset() {
         init(0, 0, Long.MAX_VALUE, Long.MIN_VALUE);
@@ -55,10 +52,6 @@ public class CacheSizeStats implements Cloneable {
      */
     public CacheSizeStats add(CacheSizeStats stat) {
         if (null != stat) {
-            if (!this.cacheName.equals(stat.cacheName)) {
-                throw new IllegalArgumentException("Cannot add a stat object with different cache name");
-            }
-
             this.objCount += stat.objCount;
             this.totalSize += stat.totalSize;
 
@@ -68,8 +61,8 @@ public class CacheSizeStats implements Cloneable {
             if (stat.maxSize > this.maxSize)
                 this.maxSize = stat.maxSize;
 
-            if (null != stat.cacheItemTypes)
-                cacheItemTypes.addAll(stat.cacheItemTypes);
+            if (null != stat.objectTypes)
+                objectTypes.addAll(stat.objectTypes);
         }
         return this;
     }
@@ -77,7 +70,7 @@ public class CacheSizeStats implements Cloneable {
     /**
      * Add transaction length
      *
-     * @param txLength transaction length
+     * @param size transaction length
      */
     public void add(long size, String objectType) {
         objCount += 1;
@@ -91,14 +84,7 @@ public class CacheSizeStats implements Cloneable {
         }
 
         if (null != objectType)
-            cacheItemTypes.add(objectType);
-    }
-
-    /**
-     * @return cachename
-     */
-    public String getCacheName() {
-        return cacheName;
+            objectTypes.add(objectType);
     }
 
     /**
@@ -140,7 +126,7 @@ public class CacheSizeStats implements Cloneable {
 
     public String getCacheItemTypes() {
         StringBuilder sb = new StringBuilder();
-        for (String type : cacheItemTypes) {
+        for (String type : objectTypes) {
             if (sb.length() > 0)
                 sb.append(",");
             sb.append(type);
@@ -151,8 +137,7 @@ public class CacheSizeStats implements Cloneable {
     @Override
     public String toString() {
         return String
-                .format("Cache: %s, Items Types: %s, Items Size Stats:[Sampled Count: %d, Avg Size: %s KB, Min Size: %s KB, Max Size: %s KB]",
-                        getCacheName(),
+                .format("Object Types: {%s}, Size:[Sampled Count: %d, Avg Size: %s KB, Min Size: %s KB, Max Size: %s KB]",
                         getCacheItemTypes(),
                         getObjCount(),
                         nf.format(getAvgSize() / 1024),

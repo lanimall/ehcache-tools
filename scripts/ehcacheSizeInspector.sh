@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #
 # All content copyright Terracotta, Inc., unless otherwise indicated. All rights reserved.
@@ -97,7 +97,12 @@ fi
 JAVA_OPTS="${JAVA_OPTS} -Xms128m -Xmx256m -XX:MaxDirectMemorySize=10G"
 JAVA_OPTS="${JAVA_OPTS} -Dehcache.config.path=${EHCACHE_CONFIG_PATH}"
 JAVA_OPTS="${JAVA_OPTS} -DuseThreading"
-JAVA_OPTS="${JAVA_OPTS} -DserializedSize"
+
+#some options...
+#JAVA_OPTS="${JAVA_OPTS} -DcachePoolSize=4"
+#JAVA_OPTS="${JAVA_OPTS} -DsizeOfType=agent"
+#JAVA_OPTS="${JAVA_OPTS} -DnoSerializedSize"
+#JAVA_OPTS="${JAVA_OPTS} -DnoUnSerializedSize"
 
 #if not defined or does not exist, try in the base directory
 if [ -f ${TC_LICENSEKEY} ]; then
@@ -107,4 +112,4 @@ fi
 exec "$JAVACMD" ${JAVA_OPTS} \
   -classpath "$CLASSPATH" \
   -Dbasedir="$BASEDIR" \
-  org.terracotta.utils.cacheObjectsInspect "$@"
+  com.terracotta.tools.cacheObjectsInspect "$@"
