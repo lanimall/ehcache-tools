@@ -70,7 +70,7 @@ public class cacheSize {
 
     public void run() throws Exception {
         if (cacheName == null || "".equals(cacheName)) {
-            System.out.println("No cache name defined. Doing nothing.");
+            throw new Exception("No cache name defined. Doing nothing.");
         } else {
             System.out.println("-----------------------------------------------------------------");
             System.out.println("Start Cache Sizes at " + new Date() + "\n");

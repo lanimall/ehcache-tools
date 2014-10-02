@@ -52,16 +52,14 @@ public class cacheKeyValuePrint {
 
     public void run() throws Exception {
         if (cacheName == null || "".equals(cacheName)) {
-            System.out.println("No cache name defined. Doing nothing.");
+            throw new Exception("No cache name defined. Doing nothing.");
         } else {
             if (key == null || "".equals(key)) {
-                System.out.println("No cache key specified. Doing nothing.");
+                throw new Exception("No cache key specified. Doing nothing.");
             } else {
                 Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cacheName);
-
                 if (cache == null) {
-                    System.out.println("Cache " + cacheName + "not found.");
-                    System.exit(1);
+                    throw new Exception("Cache " + cacheName + "not found.");
                 }
 
                 if (AppConstants.PARAMS_ALL.equalsIgnoreCase(key)) {
@@ -97,7 +95,7 @@ public class cacheKeyValuePrint {
             if (e != null) {
                 printValue(e);
             } else {
-                System.out.println(String.format("Key %s not found. May be expired.", key.toString()));
+                System.out.println(String.format("Cache key %s is not in cache.", (null != key) ? key.toString() : "null"));
             }
         } else {
             throw new Exception("Cache or key is null...doing nothing.");

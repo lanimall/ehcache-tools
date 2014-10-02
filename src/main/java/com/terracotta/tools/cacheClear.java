@@ -56,10 +56,10 @@ public class cacheClear {
 
     public void run() throws Exception {
         if (cacheName == null || "".equals(cacheName)) {
-            System.out.println("No cache name defined. Doing nothing.");
+            throw new Exception("No cache name defined. Doing nothing.");
         } else {
             if (commaSeparatedKeys == null || "".equals(commaSeparatedKeys)) {
-                System.out.println("No cache key(s) specified. Doing nothing.");
+                throw new Exception("No cache key(s) specified. Doing nothing.");
             } else {
                 String[] cname;
                 if (AppConstants.PARAMS_ALL.equalsIgnoreCase(cacheName)) {
