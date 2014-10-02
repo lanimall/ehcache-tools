@@ -86,7 +86,7 @@ public class cacheClear {
 
                         clearCache(cache, keys);
 
-                        System.out.println("Checking if requested keys are in cache now...");
+                        System.out.println("Now, checking if requested keys are in cache...");
                         int it = 0;
                         while (it < CHECK_ITERATION_LIMIT_DEFAULT) {
                             System.out.println(String.format("---------------- Iteration %d ----------------", it + 1));
