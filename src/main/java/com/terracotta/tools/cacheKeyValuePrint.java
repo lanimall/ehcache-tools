@@ -3,7 +3,6 @@ package com.terracotta.tools;
 import com.terracotta.tools.utils.AppConstants;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
-import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,71 +14,97 @@ import java.util.List;
 public class cacheKeyValuePrint {
     private static Logger log = LoggerFactory.getLogger(cacheKeyValuePrint.class);
 
-    public static void main(String args[]) {
+    private final String cacheName;
+    private final String key;
 
+    public cacheKeyValuePrint(String cacheName, String key) {
+        this.cacheName = cacheName;
+        this.key = key;
+    }
+
+    public static void main(String args[]) {
         String cacheName = null;
         String key = null;
         try {
-
             if (args.length == 0) {
-                System.out.println("Usage <cache name> [key]");
-                System.exit(1);
-            }
-            if (args.length == 1) {
-                cacheName = args[0];
-
-            } else if (args.length == 2) {
-                cacheName = args[0];
-                key = args[1];
-            } else {
-
-            }
-
-            CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
-            Cache cache = cacheManager.getCache(cacheName);
-            if (cache == null) {
-                System.out.println("Cache " + cacheName + "not found.");
+                System.out.println("Wrong arguments.");
+                System.out.println("Usage " + cacheKeyValuePrint.class.getSimpleName() + " <cache name> <key>");
                 System.exit(1);
             }
 
-            if (key == null) {
-                printAllValues(cache);
-            } else {
-                printKeyValue(cache, key);
+            if (args.length > 0) {
+                cacheName = args[0];
+                if (args.length > 1) {
+                    key = args[1];
+                }
             }
 
-            CacheFactory.getInstance().getCacheManager().shutdown();
+            new cacheKeyValuePrint(cacheName, key).run();
+
             System.exit(0);
         } catch (Exception ex) {
             log.error("", ex);
             System.exit(1);
+        } finally {
+            CacheFactory.getInstance().getCacheManager().shutdown();
         }
     }
 
-    private static void printAllValues(Cache cache) {
-        System.out.println("-----------------------------------------------------------------");
-        System.out.println("Start Cache Keys/Values Print" + new Date());
-
-        List cacheKeyList = (AppConstants.useKeyWithExpiryCheck) ? cache.getKeysWithExpiryCheck() : cache.getKeys();
-        System.out.println("Listing Keys and Values for cache " + cache.getName() + " Size = " + cacheKeyList.size());
-        Iterator iterator = cacheKeyList.iterator();
-        while (iterator.hasNext()) {
-            printKeyValue(cache, iterator.next());
-        }
-
-        System.out.println("End Cache Keys/Values Print" + new Date());
-    }
-
-    private static void printKeyValue(Cache cache, Object key) {
-        Element e = cache.get(key);
-        if (e != null) {
-            printValue(e);
+    public void run() throws Exception {
+        if (cacheName == null || "".equals(cacheName)) {
+            System.out.println("No cache name defined. Doing nothing.");
         } else {
-            System.out.println(String.format("Key %s not found. May be expired.", key.toString()));
+            if (key == null || "".equals(key)) {
+                System.out.println("No cache key specified. Doing nothing.");
+            } else {
+                Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cacheName);
+
+                if (cache == null) {
+                    System.out.println("Cache " + cacheName + "not found.");
+                    System.exit(1);
+                }
+
+                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(key)) {
+                    printAllValues(cache);
+                } else {
+                    printKeyValue(cache, key);
+                }
+            }
         }
     }
 
-    private static void printValue(Element e) {
+    private void printAllValues(Cache cache) throws Exception {
+        if (null != cache) {
+            System.out.println("-----------------------------------------------------------------");
+            System.out.println("Start Cache Keys/Values Print" + new Date());
+
+            List cacheKeyList = (AppConstants.useKeyWithExpiryCheck) ? cache.getKeysWithExpiryCheck() : cache.getKeys();
+            System.out.println("Listing Keys and Values for cache " + cache.getName() + " Size = " + cacheKeyList.size());
+            Iterator iterator = cacheKeyList.iterator();
+            while (iterator.hasNext()) {
+                printKeyValue(cache, iterator.next());
+            }
+
+            System.out.println("End Cache Keys/Values Print" + new Date());
+        } else {
+            throw new Exception("Cache is null...doing nothing.");
+        }
+    }
+
+    private void printKeyValue(Cache cache, Object key) throws Exception {
+        if (null != cache && key != null) {
+            Element e = cache.get(key);
+            if (e != null) {
+                printValue(e);
+            } else {
+                System.out.println(String.format("Key %s not found. May be expired.", key.toString()));
+            }
+        } else {
+            throw new Exception("Cache or key is null...doing nothing.");
+        }
+    }
+
+    private void printValue(Element e) {
         if (e != null) {
             if (e.getObjectValue() == null) {
                 System.out.println(String.format("Key=%s / Value=%s", e.getObjectKey().toString(), "null"));

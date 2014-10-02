@@ -313,8 +313,8 @@ public class cacheObjectsInspect {
             // create Options object
             Options options = new Options();
             options.addOption(new Option("help", "this message..."));
-            options.addOption("cacheNames", true, "Cache names to inspect.");
-            options.addOption("samplingSize", true, "Number of items to sample for size calculation");
+            options.addOption("cachename", true, "Cache name to inspect.");
+            options.addOption("samplingsize", true, "Number of items to sample for size calculation");
 
             // create the parser
             CommandLineParser parser = new GnuParser();
@@ -326,8 +326,8 @@ public class cacheObjectsInspect {
                     formatter.printHelp("SizeIteratorLauncher", options);
                     System.exit(0);
                 }
-                cacheNames = line.getOptionValue("cacheNames", "");
-                samplingSize = Integer.parseInt(line.getOptionValue("samplingSize", new Integer(DEFAULT_SAMPLEDSIZE).toString()));
+                cacheNames = line.getOptionValue("cachename", "");
+                samplingSize = Integer.parseInt(line.getOptionValue("samplingsize", new Integer(DEFAULT_SAMPLEDSIZE).toString()));
             } catch (ParseException exp) {
                 // oops, something went wrong
                 System.err.println("Parsing failed.  Reason: " + exp.getMessage());

@@ -13,6 +13,16 @@ import java.util.Date;
 public class tcPing {
     private static Logger log = LoggerFactory.getLogger(tcPing.class);
 
+    private final int step;
+    private final String uid;
+    private final int count;
+
+    public tcPing(int step, String uid, int count) {
+        this.step = step;
+        this.uid = uid;
+        this.count = count;
+    }
+
     private static void usage() {
         System.out
                 .println("Usage tcPing  [1/2] [unique id] [number of elements]");
@@ -35,41 +45,41 @@ public class tcPing {
                 count = Integer.parseInt(args[2]);
             }
 
-            CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
-            if (cacheManager == null) {
-                System.out
-                        .println("Unable to create cache manager. Check if ehcache.xml is in path.");
-                System.exit(1);
-            }
+            new tcPing(step, uid, count).run();
 
-            Cache pingCache = cacheManager.getCache("terracottaPing");
-            if (pingCache == null) {
-                System.out
-                        .println("Unable to create cache 'terracottaPing'. Check if ehcache.xml has this cache defined.");
-                System.exit(1);
-            }
-
-            if (step == 1) {
-                System.out.println("Starting Step 1 of tcPing..");
-                step1(pingCache, uid, count);
-                System.out.println("Step 1 of tcPing done..");
-                Thread.sleep(1000);
-            } else {
-                System.out.println("Starting Step 2 of tcPing..");
-                step2(pingCache, uid, count);
-                System.out.println("Step 2 of tcPing done..");
-            }
-
-            cacheManager.shutdown();
             System.exit(0);
         } catch (Exception ex) {
             log.error("", ex);
             System.exit(1);
+        } finally {
+            CacheFactory.getInstance().getCacheManager().shutdown();
         }
     }
 
-    private static void step1(Cache pingCache, String uid, int count)
-            throws Exception {
+    public void run() throws Exception {
+        CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
+        if (cacheManager == null) {
+            throw new Exception("Unable to create cache manager. Check if ehcache.xml is in path.");
+        }
+
+        Cache pingCache = cacheManager.getCache("terracottaPing");
+        if (pingCache == null) {
+            throw new Exception("Unable to create cache 'terracottaPing'. Check if ehcache.xml has this cache defined.");
+        }
+
+        if (step == 1) {
+            System.out.println("Starting Step 1 of tcPing..");
+            step1(pingCache, uid, count);
+            System.out.println("Step 1 of tcPing done..");
+            Thread.sleep(1000);
+        } else {
+            System.out.println("Starting Step 2 of tcPing..");
+            step2(pingCache, uid, count);
+            System.out.println("Step 2 of tcPing done..");
+        }
+    }
+
+    private void step1(Cache pingCache, String uid, int count) throws Exception {
         //Clear the cache to remove stale data
         System.out.println("Now clearing all objects in cache");
         pingCache.removeAll();
@@ -90,9 +100,7 @@ public class tcPing {
         System.out.println("Loaded cache " + pingCache.getName() + ". Size =  " + pingCache.getSize());
     }
 
-    private static void step2(Cache pingCache, String uid, int count)
-            throws Exception {
-
+    private void step2(Cache pingCache, String uid, int count) throws Exception {
         System.out.println("Found cache " + pingCache.getName() + " with Size " + pingCache.getSize());
         System.out.println("Now verifying validity of all objects in cache");
 
