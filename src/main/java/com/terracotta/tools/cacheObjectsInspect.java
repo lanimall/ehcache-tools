@@ -1,16 +1,16 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.CacheFactory;
 import com.terracotta.tools.utils.CacheSizeStats;
 import com.terracotta.tools.utils.CacheStatsDefinition;
 import com.terracotta.tools.utils.NamedThreadFactory;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
-import net.sf.ehcache.CacheManager;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.pool.sizeof.SizeOf;
 import net.sf.ehcache.pool.sizeof.filter.PassThroughFilter;
-import org.apache.commons.cli.*;
 import org.apache.commons.lang.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,9 +43,7 @@ public class cacheObjectsInspect {
 
     private final String sCachePoolSize = System.getProperty(CONFIG_CACHEPOOLSIZE, new Integer(DEFAULT_CACHEPOOLSIZE).toString());
 
-    private final String[] myCacheNames;
-    private final int sampledSize;
-
+    private final AppParams runParams;
     private final ExecutorService cacheFetchService;
     //private final ExecutorService cacheGetService;
 
@@ -70,26 +68,19 @@ public class cacheObjectsInspect {
         }
     }
 
-    public cacheObjectsInspect(final String cacheName) {
-        this(cacheName, -1);
-    }
+    public cacheObjectsInspect(final AppParams params) {
+        this.runParams = params;
 
-    public cacheObjectsInspect(final String cacheName, int sampledSize) {
-        CacheManager cacheManager = CacheFactory.getInstance().getCacheManager();
-
-        if (sampledSize <= 0)
-            throw new IllegalArgumentException("Sampled size should be > 0");
-
-        this.sampledSize = sampledSize;
-
-        if (cacheName == null || !cacheManager.cacheExists(cacheName)) {
-            this.myCacheNames = cacheManager.getCacheNames();
-        } else {
-            this.myCacheNames = new String[]{cacheName};
+        if (null == runParams.getCacheNames() || runParams.getCacheNames().size() == 0) {
+            throw new IllegalArgumentException("No cache defined...verify that ehcache.xml is specified.");
         }
 
-        if (myCacheNames.length == 0)
+        if (runParams.getSamplingSize() <= 0)
+            throw new IllegalArgumentException("Sampled size should be > 0");
+
+        if (null == runParams.getCacheNames() || runParams.getCacheNames().size() == 0) {
             throw new IllegalArgumentException("No cache defined...verify that ehcache.xml is specified.");
+        }
 
         int cachePoolSize;
         try {
@@ -98,7 +89,7 @@ public class cacheObjectsInspect {
             cachePoolSize = DEFAULT_CACHEPOOLSIZE;
         }
 
-        this.cacheFetchService = Executors.newFixedThreadPool((myCacheNames.length > cachePoolSize) ? cachePoolSize : myCacheNames.length, new NamedThreadFactory("Cache Sizing Pool"));
+        this.cacheFetchService = Executors.newCachedThreadPool(new NamedThreadFactory("Cache Sizing Pool"));
     }
 
     @Override
@@ -107,7 +98,7 @@ public class cacheObjectsInspect {
         shutdownAndAwaitTermination(cacheFetchService);
     }
 
-    public void findObjectSizesInCache() {
+    public void run() {
         if (useThreading) {
             findThreadingObjectSizesInCache();
         } else {
@@ -115,10 +106,14 @@ public class cacheObjectsInspect {
         }
     }
 
+    public void postRun() {
+        CacheFactory.getInstance().getCacheManager().shutdown();
+    }
+
     private void findThreadingObjectSizesInCache() {
-        Future<Map<CacheStatsDefinition, CacheSizeStats>> futs[] = new Future[myCacheNames.length];
+        Future<Map<CacheStatsDefinition, CacheSizeStats>> futs[] = new Future[runParams.getCacheNames().size()];
         int cacheCount = 0;
-        for (String cacheName : myCacheNames) {
+        for (String cacheName : runParams.getCacheNames()) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
             futs[cacheCount++] = cacheFetchService.submit(new CacheFetchOp(myCache));
         }
@@ -150,7 +145,7 @@ public class cacheObjectsInspect {
     private void findSerialObjectSizesInCache() {
 
         Map<CacheStatsDefinition, CacheSizeStats> cacheStats = null;
-        for (String cacheName : myCacheNames) {
+        for (String cacheName : runParams.getCacheNames()) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
             cacheStats = new CacheFetchOp(myCache).call();
 
@@ -179,7 +174,7 @@ public class cacheObjectsInspect {
                 List<Object> keys = myCache.getKeys();
                 int iterationLimit = 0;
                 for (Object key : keys) {
-                    if (iterationLimit >= sampledSize) break;
+                    if (iterationLimit >= runParams.getSamplingSize()) break;
 
                     doGets(key, cacheStats);
 
@@ -306,42 +301,27 @@ public class cacheObjectsInspect {
     }
 
     public static void main(String[] args) {
-        String cacheNames;
-        int samplingSize;
-
         try {
-            // create Options object
-            Options options = new Options();
-            options.addOption(new Option("help", "this message..."));
-            options.addOption("cachename", true, "Cache name to inspect.");
-            options.addOption("samplingsize", true, "Number of items to sample for size calculation");
+            AppParams params = CliFactory.parseArguments(AppParams.class, args);
 
-            // create the parser
-            CommandLineParser parser = new GnuParser();
-            try {
-                // parse the command line arguments
-                CommandLine line = parser.parse(options, args);
-                if (line.hasOption("help")) {
-                    HelpFormatter formatter = new HelpFormatter();
-                    formatter.printHelp("SizeIteratorLauncher", options);
-                    System.exit(0);
-                }
-                cacheNames = line.getOptionValue("cachename", "");
-                samplingSize = Integer.parseInt(line.getOptionValue("samplingsize", new Integer(DEFAULT_SAMPLEDSIZE).toString()));
-            } catch (ParseException exp) {
-                // oops, something went wrong
-                System.err.println("Parsing failed.  Reason: " + exp.getMessage());
-                return;
-            }
+            cacheObjectsInspect launcher = new cacheObjectsInspect(params);
 
-            cacheObjectsInspect launcher = new cacheObjectsInspect(cacheNames, samplingSize);
-            launcher.findObjectSizesInCache();
+            launcher.run();
 
-            CacheFactory.getInstance().getCacheManager().shutdown();
+            launcher.postRun();
+
             System.exit(0);
-        } catch (Exception ex) {
-            log.error("", ex);
+        } catch (Exception e) {
+            log.error("", e);
             System.exit(1);
         }
+    }
+
+    public interface AppParams {
+        @Option(defaultValue = "")
+        List<String> getCacheNames();
+
+        @Option(defaultValue = "" + DEFAULT_SAMPLEDSIZE)
+        int getSamplingSize();
     }
 }

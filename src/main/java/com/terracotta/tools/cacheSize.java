@@ -1,5 +1,7 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.AppConstants;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
@@ -12,56 +14,35 @@ public class cacheSize {
     private static Logger log = LoggerFactory.getLogger(cacheSize.class);
 
     private static final int SLEEP_DEFAULT = 1000;
-    private static final int ITERATION_LIMIT_DEFAULT = 10;
+    private static final int ITERATION_LIMIT_DEFAULT = 2;
 
-    private final int sleep;
-    private final String cacheName;
-    private final int iterationLimit;
+    private final AppParams runParams;
 
-    public cacheSize(String cacheName, int sleep, int iterationLimit) {
-        this.sleep = sleep;
-        this.cacheName = cacheName;
-        this.iterationLimit = iterationLimit;
+    public cacheSize(final AppParams params) {
+        this.runParams = params;
     }
 
-    public static void main(String args[]) {
-        int sleep = SLEEP_DEFAULT;
-        String cacheName = null;
-        int iterationLimit = ITERATION_LIMIT_DEFAULT;
+    public cacheSize(String cacheName, int sleep, int iterationLimit) {
+        this.runParams = new AppParams(cacheName, sleep, iterationLimit);
+    }
+
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("Wrong arguments.");
+            System.out.println("Usage " + cacheSize.class.getSimpleName() + " <cache name|all> <sleep interval in ms> <iteration max count>");
+            System.exit(1);
+        }
 
         try {
-            if (args.length == 0) {
-                System.out.println("Wrong arguments.");
-                System.out.println("Usage " + cacheSize.class.getSimpleName() + " <cache name|all> <sleep interval in ms> <iteration max count>");
-                System.exit(1);
-            }
+            AppParams params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
-            if (args.length > 0) {
-                cacheName = args[0];
-                if (args.length > 1) {
-                    try {
-                        sleep = Integer.parseInt(args[1]);
-                    } catch (NumberFormatException e) {
-                        log.warn("Sleep value not formatted right. Default to " + SLEEP_DEFAULT);
-                        sleep = SLEEP_DEFAULT;
-                    }
+            cacheSize launcher = new cacheSize(params);
 
-                    if (args.length > 2) {
-                        try {
-                            iterationLimit = Integer.parseInt(args[2]);
-                        } catch (NumberFormatException e) {
-                            log.warn("Iteration limit not formatted right. Default to " + ITERATION_LIMIT_DEFAULT);
-                            iterationLimit = ITERATION_LIMIT_DEFAULT;
-                        }
-                    }
-                }
-            }
-
-            new cacheSize(cacheName, sleep, iterationLimit).run();
+            launcher.run();
 
             System.exit(0);
-        } catch (Exception ex) {
-            log.error("", ex);
+        } catch (Exception e) {
+            log.error("", e);
             System.exit(1);
         } finally {
             CacheFactory.getInstance().getCacheManager().shutdown();
@@ -69,23 +50,23 @@ public class cacheSize {
     }
 
     public void run() throws Exception {
-        if (cacheName == null || "".equals(cacheName)) {
+        if (runParams.getCacheNames() == null || "".equals(runParams.getCacheNames())) {
             throw new Exception("No cache name defined. Doing nothing.");
         } else {
             System.out.println("-----------------------------------------------------------------");
             System.out.println("Start Cache Sizes at " + new Date() + "\n");
 
             String[] cname;
-            if (AppConstants.PARAMS_ALL.equalsIgnoreCase(cacheName)) {
+            if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNames())) {
                 System.out.println("Requested to get size for all caches...");
                 cname = CacheFactory.getInstance().getCacheManager().getCacheNames();
             } else {
-                cname = new String[]{cacheName};
+                cname = new String[]{runParams.getCacheNames()};
             }
 
             //perform operation
             int it = 0;
-            while (it < iterationLimit) {
+            while (it < runParams.getIterationLimit()) {
                 System.out.println(String.format("---------------- Iteration %d ----------------", it + 1));
                 for (int i = 0; i < cname.length; i++) {
                     Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cname[i]);
@@ -95,7 +76,7 @@ public class cacheSize {
                         System.out.println(String.format("Cache %s not found.", cname[i]));
                     }
                 }
-                Thread.sleep(sleep);
+                Thread.sleep(runParams.getSleep());
                 it++;
             }
 
@@ -112,6 +93,48 @@ public class cacheSize {
             }
         } else {
             throw new Exception("Cache is null...doing nothing.");
+        }
+    }
+
+    public static class AppParams {
+        private String cacheNames;
+        int sleep;
+        int iterationLimit;
+
+        public AppParams() {
+        }
+
+        public AppParams(String cacheNames, int sleep, int iterationLimit) {
+            this.cacheNames = cacheNames;
+            this.sleep = sleep;
+            this.iterationLimit = iterationLimit;
+        }
+
+        public String getCacheNames() {
+            return cacheNames;
+        }
+
+        @Option(defaultValue = "", longName = "caches")
+        public void setCacheNames(String cacheNames) {
+            this.cacheNames = cacheNames;
+        }
+
+        public int getSleep() {
+            return sleep;
+        }
+
+        @Option(defaultValue = "" + SLEEP_DEFAULT, longName = "sleep")
+        public void setSleep(int sleep) {
+            this.sleep = sleep;
+        }
+
+        public int getIterationLimit() {
+            return iterationLimit;
+        }
+
+        @Option(defaultValue = "" + ITERATION_LIMIT_DEFAULT, longName = "iterations")
+        public void setIterationLimit(int iterationLimit) {
+            this.iterationLimit = iterationLimit;
         }
     }
 }

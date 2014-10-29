@@ -1,5 +1,7 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.AppConstants;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
@@ -14,36 +16,35 @@ import java.util.List;
 public class cacheKeyValuePrint {
     private static Logger log = LoggerFactory.getLogger(cacheKeyValuePrint.class);
 
-    private final String cacheName;
-    private final String key;
+    private final AppParams runParams;
 
-    public cacheKeyValuePrint(String cacheName, String key) {
-        this.cacheName = cacheName;
-        this.key = key;
+    public cacheKeyValuePrint(final String cacheNames, final String cacheKeys) {
+        this.runParams = new AppParams();
+        runParams.setCacheNames(cacheNames);
+        runParams.setCacheKeys(cacheKeys);
     }
 
-    public static void main(String args[]) {
-        String cacheName = null;
-        String key = null;
+    public cacheKeyValuePrint(final AppParams params) {
+        this.runParams = params;
+    }
+
+    public static void main(String[] args) {
+        if (args.length == 0) {
+            System.out.println("Wrong arguments.");
+            System.out.println("Usage " + cacheKeyValuePrint.class.getSimpleName() + " <cache name> <key>");
+            System.exit(1);
+        }
+
         try {
-            if (args.length == 0) {
-                System.out.println("Wrong arguments.");
-                System.out.println("Usage " + cacheKeyValuePrint.class.getSimpleName() + " <cache name> <key>");
-                System.exit(1);
-            }
+            AppParams params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
-            if (args.length > 0) {
-                cacheName = args[0];
-                if (args.length > 1) {
-                    key = args[1];
-                }
-            }
+            cacheKeyValuePrint launcher = new cacheKeyValuePrint(params);
 
-            new cacheKeyValuePrint(cacheName, key).run();
+            launcher.run();
 
             System.exit(0);
-        } catch (Exception ex) {
-            log.error("", ex);
+        } catch (Exception e) {
+            log.error("", e);
             System.exit(1);
         } finally {
             CacheFactory.getInstance().getCacheManager().shutdown();
@@ -51,21 +52,21 @@ public class cacheKeyValuePrint {
     }
 
     public void run() throws Exception {
-        if (cacheName == null || "".equals(cacheName)) {
+        if (runParams.getCacheNames() == null || "".equals(runParams.getCacheNames())) {
             throw new Exception("No cache name defined. Doing nothing.");
         } else {
-            if (key == null || "".equals(key)) {
+            if (runParams.getCacheKeys() == null || "".equals(runParams.getCacheKeys())) {
                 throw new Exception("No cache key specified. Doing nothing.");
             } else {
-                Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cacheName);
+                Cache cache = CacheFactory.getInstance().getCacheManager().getCache(runParams.getCacheNames());
                 if (cache == null) {
-                    throw new Exception("Cache " + cacheName + "not found.");
+                    throw new Exception("Cache " + runParams.getCacheNames() + "not found.");
                 }
 
-                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(key)) {
+                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheKeys())) {
                     printAllValues(cache);
                 } else {
-                    printKeyValue(cache, key);
+                    printKeyValue(cache, runParams.getCacheKeys());
                 }
             }
         }
@@ -118,6 +119,32 @@ public class cacheKeyValuePrint {
                     System.out.println(String.format("Key=%s / Value=%s", e.getObjectKey().toString(), e.getObjectValue().toString()));
                 }
             }
+        }
+    }
+
+    public static class AppParams {
+        private String cacheNames;
+        private String cacheKeys;
+
+        public AppParams() {
+        }
+
+        public String getCacheNames() {
+            return cacheNames;
+        }
+
+        @Option(defaultValue = "", longName = "caches")
+        public void setCacheNames(String cacheNames) {
+            this.cacheNames = cacheNames;
+        }
+
+        public String getCacheKeys() {
+            return cacheKeys;
+        }
+
+        @Option(defaultValue = "", longName = "keys")
+        public void setCacheKeys(String cacheKeys) {
+            this.cacheKeys = cacheKeys;
         }
     }
 }

@@ -1,5 +1,7 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.AppConstants;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
@@ -17,71 +19,40 @@ public class cacheClear {
 
     private static final int CHECK_ITERATION_LIMIT_DEFAULT = 5;
 
-    private final String cacheName;
-    private final String commaSeparatedKeys;
+    private final AppParams runParams;
 
-    public cacheClear(String cacheName, String commaSeparatedKeys) {
-        this.cacheName = cacheName;
-        this.commaSeparatedKeys = commaSeparatedKeys;
-    }
-
-    public static void main(String args[]) {
-        String cacheName = null;
-        String commaSeparatedKeys = null;
-
-        try {
-            if (args.length == 0) {
-                System.out.println("Wrong arguments.");
-                System.out.println("Usage " + cacheClear.class.getSimpleName() + " <cache name|all> <key1,key2,...,keyN|all>");
-                System.exit(1);
-            }
-
-            if (args.length > 0) {
-                cacheName = args[0];
-                if (args.length > 1) {
-                    commaSeparatedKeys = args[1];
-                }
-            }
-
-            new cacheClear(cacheName, commaSeparatedKeys).run();
-
-            System.exit(0);
-        } catch (Exception ex) {
-            log.error("", ex);
-            System.exit(1);
-        } finally {
-            CacheFactory.getInstance().getCacheManager().shutdown();
-        }
+    public cacheClear(final AppParams params) {
+        this.runParams = params;
     }
 
     public void run() throws Exception {
-        if (cacheName == null || "".equals(cacheName)) {
+        if (runParams.getCacheNames() == null || "".equals(runParams.getCacheNames())) {
             throw new Exception("No cache name defined. Doing nothing.");
         } else {
-            if (commaSeparatedKeys == null || "".equals(commaSeparatedKeys)) {
+            if (runParams.getCacheKeys() == null || "".equals(runParams.getCacheKeys())) {
                 throw new Exception("No cache key(s) specified. Doing nothing.");
             } else {
                 String[] cname;
-                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(cacheName)) {
+                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNames())) {
                     System.out.println("Requested to clear all caches...");
                     cname = CacheFactory.getInstance().getCacheManager().getCacheNames();
                 } else {
-                    cname = new String[]{cacheName};
+                    cname = new String[]{runParams.getCacheNames()};
                 }
 
                 //perform operation
                 for (int i = 0; i < cname.length; i++) {
                     Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cname[i]);
 
-                    if (AppConstants.PARAMS_ALL.equalsIgnoreCase(commaSeparatedKeys)) {
+                    if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheKeys())) {
                         clearCache(cache);
 
                         System.out.println("Checking cache sizes now...");
-                        new cacheSize(cacheName, 1000, CHECK_ITERATION_LIMIT_DEFAULT).run();
+                        new cacheSize(runParams.getCacheNames(), 1000, CHECK_ITERATION_LIMIT_DEFAULT).run();
                     } else {
                         String[] keys = null;
-                        if (null != commaSeparatedKeys) {
-                            keys = commaSeparatedKeys.split(",");
+                        if (null != runParams.getCacheKeys()) {
+                            keys = runParams.getCacheKeys().split(",");
                         }
 
                         clearCache(cache, keys);
@@ -91,7 +62,7 @@ public class cacheClear {
                         while (it < CHECK_ITERATION_LIMIT_DEFAULT) {
                             System.out.println(String.format("---------------- Iteration %d ----------------", it + 1));
                             for (String key : keys) {
-                                new cacheKeysPrint(cacheName, key).run();
+                                new cacheKeysPrint(runParams.getCacheNames(), key).run();
                             }
                             it++;
                         }
@@ -191,6 +162,49 @@ public class cacheClear {
             System.out.println("------------------------------------------------");
         } else {
             throw new Exception("Cache is null...doing nothing.");
+        }
+    }
+
+    public static void main(String[] args) {
+        try {
+            AppParams params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
+
+            cacheClear launcher = new cacheClear(params);
+
+            launcher.run();
+
+            System.exit(0);
+        } catch (Exception e) {
+            log.error("", e);
+            System.exit(1);
+        } finally {
+            CacheFactory.getInstance().getCacheManager().shutdown();
+        }
+    }
+
+    public static class AppParams {
+        private String cacheNames;
+        private String cacheKeys;
+
+        public AppParams() {
+        }
+
+        public String getCacheNames() {
+            return cacheNames;
+        }
+
+        @Option(defaultValue = "", longName = "caches")
+        public void setCacheNames(String cacheNames) {
+            this.cacheNames = cacheNames;
+        }
+
+        public String getCacheKeys() {
+            return cacheKeys;
+        }
+
+        @Option(defaultValue = "", longName = "keys")
+        public void setCacheKeys(String cacheKeys) {
+            this.cacheKeys = cacheKeys;
         }
     }
 }
