@@ -6,11 +6,12 @@
 
 case "$1" in
   ""|"--help"|"-h"|"-?")
-    echo "Syntax: $0 [cacheKeyValuePrint|cacheKeysPrint|cacheSize] [arguments.....]"
-    echo "cacheKeyValuePrint - Prints the Keys and values (only string or list/string) for a given cache."  
-    echo "cacheKeysPrint - Prints the Keys in a cache or all caches."
+    echo "Syntax: $0 [cacheElementPrint|cacheSize|cacheClear|cacheDateClear|cacheObjectsInspect] [arguments.....]"
+    echo "cacheElementPrint - Prints cache elements for a given cache."
     echo "cacheSize - Prints the total number of cache entries in each cache in a continous loop."
-    echo "cacheClear - Clear all cache entries in specified cache or all caches."
+    echo "cacheClear - Clear 1 or more cache entries in specified cache or all caches."
+    echo "cacheDateClear - Clear all cache entries that match the date filter query"
+    echo "cacheObjectsInspect - Inspect cache objects stored in cache and print size statistics"
     echo "tcPing - Health Check of the cluster"
     exit
     ;;

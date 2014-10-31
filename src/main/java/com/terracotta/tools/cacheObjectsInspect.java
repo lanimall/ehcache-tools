@@ -1,11 +1,10 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.ArgumentValidationException;
 import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
 import com.lexicalscope.jewel.cli.Option;
-import com.terracotta.tools.utils.CacheFactory;
-import com.terracotta.tools.utils.CacheSizeStats;
-import com.terracotta.tools.utils.CacheStatsDefinition;
-import com.terracotta.tools.utils.NamedThreadFactory;
+import com.terracotta.tools.utils.*;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.CacheException;
 import net.sf.ehcache.Element;
@@ -71,16 +70,12 @@ public class cacheObjectsInspect {
     public cacheObjectsInspect(final AppParams params) {
         this.runParams = params;
 
-        if (null == runParams.getCacheNames() || runParams.getCacheNames().size() == 0) {
-            throw new IllegalArgumentException("No cache defined...verify that ehcache.xml is specified.");
+        if (null == runParams.getCacheNames() || runParams.getCacheNames().length == 0) {
+            throw new IllegalArgumentException("No cache specified...");
         }
 
         if (runParams.getSamplingSize() <= 0)
             throw new IllegalArgumentException("Sampled size should be > 0");
-
-        if (null == runParams.getCacheNames() || runParams.getCacheNames().size() == 0) {
-            throw new IllegalArgumentException("No cache defined...verify that ehcache.xml is specified.");
-        }
 
         int cachePoolSize;
         try {
@@ -111,7 +106,7 @@ public class cacheObjectsInspect {
     }
 
     private void findThreadingObjectSizesInCache() {
-        Future<Map<CacheStatsDefinition, CacheSizeStats>> futs[] = new Future[runParams.getCacheNames().size()];
+        Future<Map<CacheStatsDefinition, CacheSizeStats>> futs[] = new Future[runParams.getCacheNames().length];
         int cacheCount = 0;
         for (String cacheName : runParams.getCacheNames()) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
@@ -301,27 +296,63 @@ public class cacheObjectsInspect {
     }
 
     public static void main(String[] args) {
+        AppParams params = null;
         try {
-            AppParams params = CliFactory.parseArguments(AppParams.class, args);
+            params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
-            cacheObjectsInspect launcher = new cacheObjectsInspect(params);
+            try {
+                cacheObjectsInspect launcher = new cacheObjectsInspect(params);
 
-            launcher.run();
+                launcher.run();
 
-            launcher.postRun();
+                launcher.postRun();
 
-            System.exit(0);
-        } catch (Exception e) {
-            log.error("", e);
-            System.exit(1);
+                System.exit(0);
+            } catch (Exception e) {
+                log.error("", e);
+            } finally {
+                CacheFactory.getInstance().getCacheManager().shutdown();
+            }
+        } catch (ArgumentValidationException e) {
+            System.out.println(e.getMessage());
+        } catch (InvalidOptionSpecificationException e) {
+            System.out.println(e.getMessage());
         }
+
+        System.exit(1);
     }
 
-    public interface AppParams {
-        @Option(defaultValue = "")
-        List<String> getCacheNames();
+    public static class AppParams extends BaseAppParams {
+        private String cacheNamesCSV;
+        private int samplingSize;
 
-        @Option(defaultValue = "" + DEFAULT_SAMPLEDSIZE)
-        int getSamplingSize();
+        public AppParams() {
+        }
+
+        public String getCacheNamesCSV() {
+            return cacheNamesCSV;
+        }
+
+        public String[] getCacheNames() {
+            String[] names = null;
+            if (null != cacheNamesCSV) {
+                names = cacheNamesCSV.split(",");
+            }
+            return names;
+        }
+
+        @Option(longName = "caches", description = "comma-separated cache names, or keyword \"all\" to include all caches")
+        public void setCacheNames(String cacheNamesCSV) {
+            this.cacheNamesCSV = cacheNamesCSV;
+        }
+
+        public int getSamplingSize() {
+            return samplingSize;
+        }
+
+        @Option(longName = "samplingSize", defaultValue = "" + DEFAULT_SAMPLEDSIZE, description = "amount of objects to sample for the size calculations")
+        public void setSamplingSize(int samplingSize) {
+            this.samplingSize = samplingSize;
+        }
     }
 }

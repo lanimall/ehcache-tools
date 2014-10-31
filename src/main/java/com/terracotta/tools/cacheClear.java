@@ -1,23 +1,24 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.ArgumentValidationException;
 import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
 import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.AppConstants;
+import com.terracotta.tools.utils.BaseAppParams;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
 import net.sf.ehcache.Element;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class cacheClear {
     private static Logger log = LoggerFactory.getLogger(cacheClear.class);
 
-    private static final int CHECK_ITERATION_LIMIT_DEFAULT = 5;
+    private static final int CHECK_ITERATION_LIMIT_DEFAULT = 2;
+    private static final long CHECK_ITERATION_SLEEP_DEFAULT = 2000;
 
     private final AppParams runParams;
 
@@ -26,44 +27,41 @@ public class cacheClear {
     }
 
     public void run() throws Exception {
-        if (runParams.getCacheNames() == null || "".equals(runParams.getCacheNames())) {
+        if (runParams.getCacheNamesCSV() == null || "".equals(runParams.getCacheNamesCSV())) {
             throw new Exception("No cache name defined. Doing nothing.");
         } else {
-            if (runParams.getCacheKeys() == null || "".equals(runParams.getCacheKeys())) {
+            if (runParams.getCacheKeysCSV() == null || "".equals(runParams.getCacheKeysCSV())) {
                 throw new Exception("No cache key(s) specified. Doing nothing.");
             } else {
+                System.out.println("-----------------------------------------------------------------");
+                System.out.println("Start cacheClear at " + new Date() + "\n");
+
                 String[] cname;
-                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNames())) {
-                    System.out.println("Requested to clear all caches...");
+                if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNamesCSV())) {
+                    System.out.println("Requested to get size for all caches...");
                     cname = CacheFactory.getInstance().getCacheManager().getCacheNames();
                 } else {
-                    cname = new String[]{runParams.getCacheNames()};
+                    cname = runParams.getCacheNames();
                 }
 
                 //perform operation
                 for (int i = 0; i < cname.length; i++) {
                     Cache cache = CacheFactory.getInstance().getCacheManager().getCache(cname[i]);
 
-                    if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheKeys())) {
-                        clearCache(cache);
+                    if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheKeysCSV())) {
+                        clearAllCacheEntries(cache);
 
                         System.out.println("Checking cache sizes now...");
-                        new cacheSize(runParams.getCacheNames(), 1000, CHECK_ITERATION_LIMIT_DEFAULT).run();
+                        new cacheSize(cache.getName(), 1000, CHECK_ITERATION_LIMIT_DEFAULT).run();
                     } else {
-                        String[] keys = null;
-                        if (null != runParams.getCacheKeys()) {
-                            keys = runParams.getCacheKeys().split(",");
-                        }
-
-                        clearCache(cache, keys);
+                        clearSelectedKeys(cache, runParams.getCacheKeys());
 
                         System.out.println("Now, checking if requested keys are in cache...");
                         int it = 0;
                         while (it < CHECK_ITERATION_LIMIT_DEFAULT) {
                             System.out.println(String.format("---------------- Iteration %d ----------------", it + 1));
-                            for (String key : keys) {
-                                new cacheKeysPrint(runParams.getCacheNames(), key).run();
-                            }
+                            new cacheElementPrint(cache.getName(), runParams.getCacheKeysCSV(), runParams.getCacheKeysType().getTypeString()).run();
+                            Thread.sleep(CHECK_ITERATION_SLEEP_DEFAULT);
                             it++;
                         }
                     }
@@ -72,11 +70,11 @@ public class cacheClear {
         }
     }
 
-    private void clearCache(Cache cache, Object[] keys) throws Exception {
+    private void clearSelectedKeys(Cache cache, Object[] keys) throws Exception {
         if (null != cache && null != keys && keys.length > 0) {
             int beforeRemoveSize = cache.getSize();
             System.out.println(String.format("Cache %s -- Current Size = %d", cache.getName(), beforeRemoveSize));
-            System.out.println(String.format("Cache %s -- About to clear keys %s", cache.getName(), Arrays.deepToString(keys)));
+            System.out.println(String.format("Cache %s -- About to clear keys %s (type = %s)", cache.getName(), Arrays.deepToString(keys), runParams.getCacheKeysType().getTypeString()));
 
             List keyList = Arrays.asList(keys);
 
@@ -131,7 +129,7 @@ public class cacheClear {
         return unclearedKeys;
     }
 
-    private void clearCache(Cache cache) throws Exception {
+    private void clearAllCacheEntries(Cache cache) throws Exception {
         if (null != cache) {
             int beforeRemoveSize = cache.getSize();
             System.out.println("Clearing cache " + cache.getName() + " - Current size:" + beforeRemoveSize);
@@ -166,45 +164,90 @@ public class cacheClear {
     }
 
     public static void main(String[] args) {
+        AppParams params = null;
         try {
-            AppParams params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
+            params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
-            cacheClear launcher = new cacheClear(params);
+            try {
+                cacheClear launcher = new cacheClear(params);
 
-            launcher.run();
+                launcher.run();
 
-            System.exit(0);
-        } catch (Exception e) {
-            log.error("", e);
-            System.exit(1);
-        } finally {
-            CacheFactory.getInstance().getCacheManager().shutdown();
+                System.exit(0);
+            } catch (Exception e) {
+                log.error("", e);
+            } finally {
+                CacheFactory.getInstance().getCacheManager().shutdown();
+            }
+        } catch (ArgumentValidationException e) {
+            System.out.println(e.getMessage());
+        } catch (InvalidOptionSpecificationException e) {
+            System.out.println(e.getMessage());
         }
+
+        System.exit(1);
     }
 
-    public static class AppParams {
-        private String cacheNames;
-        private String cacheKeys;
+    public static class AppParams extends BaseAppParams {
+        private String cacheNamesCSV;
+        private String cacheKeysCSV;
+        private String cacheKeysType;
 
         public AppParams() {
         }
 
-        public String getCacheNames() {
-            return cacheNames;
+        public String getCacheNamesCSV() {
+            return cacheNamesCSV;
         }
 
-        @Option(defaultValue = "", longName = "caches")
-        public void setCacheNames(String cacheNames) {
-            this.cacheNames = cacheNames;
+        public String[] getCacheNames() {
+            String[] names = null;
+            if (null != cacheNamesCSV) {
+                names = cacheNamesCSV.split(",");
+            }
+            return names;
         }
 
-        public String getCacheKeys() {
-            return cacheKeys;
+        @Option(longName = "caches", description = "comma-separated cache names, or keyword \"all\" to include all caches")
+        public void setCacheNames(String cacheNamesCSV) {
+            this.cacheNamesCSV = cacheNamesCSV;
         }
 
-        @Option(defaultValue = "", longName = "keys")
+        public String getCacheKeysCSV() {
+            return cacheKeysCSV;
+        }
+
+        @Option(longName = "keys", description = "comma-separated cache keys, or keyword \"all\" to include all keys")
         public void setCacheKeys(String cacheKeys) {
-            this.cacheKeys = cacheKeys;
+            this.cacheKeysCSV = cacheKeys;
+        }
+
+        public Object[] getCacheKeys() {
+            Object[] keys = null;
+            if (null != cacheKeysCSV) {
+                String[] strKeys = cacheKeysCSV.split(",");
+
+                //try to create a new array if casting is desired
+                AppConstants.KeyPrimitiveType keyType = getCacheKeysType();
+                if (keyType != AppConstants.KeyPrimitiveType.StringType) {
+                    keys = keyType.createArray(strKeys.length);
+                    for (int i = 0; i < strKeys.length; i++) {
+                        keys[i] = keyType.castToObjectFromString(strKeys[i]);
+                    }
+                } else {
+                    keys = strKeys;
+                }
+            }
+            return keys;
+        }
+
+        public AppConstants.KeyPrimitiveType getCacheKeysType() {
+            return AppConstants.KeyPrimitiveType.getPrimitiveType(cacheKeysType);
+        }
+
+        @Option(defaultValue = "String", longName = "keysType", description = "Specifies the object type to cast the provided keys to")
+        public void setCacheKeysType(String cacheKeysType) {
+            this.cacheKeysType = cacheKeysType;
         }
     }
 }

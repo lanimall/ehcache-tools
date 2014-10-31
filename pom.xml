@@ -120,11 +120,12 @@
                         -XX:+UseParallelOldGC -XX:+UseCompressedOops
                         -XX:MaxDirectMemorySize=10G
                         -Dcom.tc.productkey.path=${user.home}/terracotta-license.key
+                        -Dehcache.config.path=/Users/FabienSanglier/MyDev/MyTools/Terracotta-Tester-Utils/GenericCacheTester1-4x/resources/ehcache.xml
                     </extraJvmArguments>
                     <programs>
                         <program>
-                            <mainClass>com.terracotta.tools.cacheSize</mainClass>
-                            <name>cacheSize.sh</name>
+                            <mainClass>com.terracotta.tools.EhcacheCli</mainClass>
+                            <name>EhcacheCli.sh</name>
                         </program>
                     </programs>
                 </configuration>

@@ -1,8 +1,11 @@
 package com.terracotta.tools;
 
+import com.lexicalscope.jewel.cli.ArgumentValidationException;
 import com.lexicalscope.jewel.cli.CliFactory;
+import com.lexicalscope.jewel.cli.InvalidOptionSpecificationException;
 import com.lexicalscope.jewel.cli.Option;
 import com.terracotta.tools.utils.AppConstants;
+import com.terracotta.tools.utils.BaseAppParams;
 import com.terracotta.tools.utils.CacheFactory;
 import net.sf.ehcache.Cache;
 import org.slf4j.Logger;
@@ -22,31 +25,33 @@ public class cacheSize {
         this.runParams = params;
     }
 
-    public cacheSize(String cacheName, int sleep, int iterationLimit) {
-        this.runParams = new AppParams(cacheName, sleep, iterationLimit);
+    public cacheSize(String cacheNameCSV, int sleep, int iterationLimit) {
+        this.runParams = new AppParams(cacheNameCSV, sleep, iterationLimit);
     }
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.out.println("Wrong arguments.");
-            System.out.println("Usage " + cacheSize.class.getSimpleName() + " <cache name|all> <sleep interval in ms> <iteration max count>");
-            System.exit(1);
-        }
-
+        AppParams params = null;
         try {
-            AppParams params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
+            params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
-            cacheSize launcher = new cacheSize(params);
+            try {
+                cacheSize launcher = new cacheSize(params);
 
-            launcher.run();
+                launcher.run();
 
-            System.exit(0);
-        } catch (Exception e) {
-            log.error("", e);
-            System.exit(1);
-        } finally {
-            CacheFactory.getInstance().getCacheManager().shutdown();
+                System.exit(0);
+            } catch (Exception e) {
+                log.error("", e);
+            } finally {
+                CacheFactory.getInstance().getCacheManager().shutdown();
+            }
+        } catch (ArgumentValidationException e) {
+            System.out.println(e.getMessage());
+        } catch (InvalidOptionSpecificationException e) {
+            System.out.println(e.getMessage());
         }
+
+        System.exit(1);
     }
 
     public void run() throws Exception {
@@ -57,11 +62,11 @@ public class cacheSize {
             System.out.println("Start Cache Sizes at " + new Date() + "\n");
 
             String[] cname;
-            if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNames())) {
+            if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNamesCSV())) {
                 System.out.println("Requested to get size for all caches...");
                 cname = CacheFactory.getInstance().getCacheManager().getCacheNames();
             } else {
-                cname = new String[]{runParams.getCacheNames()};
+                cname = runParams.getCacheNames();
             }
 
             //perform operation
@@ -96,34 +101,42 @@ public class cacheSize {
         }
     }
 
-    public static class AppParams {
-        private String cacheNames;
+    public static class AppParams extends BaseAppParams {
+        private String cacheNamesCSV;
         int sleep;
         int iterationLimit;
 
         public AppParams() {
         }
 
-        public AppParams(String cacheNames, int sleep, int iterationLimit) {
-            this.cacheNames = cacheNames;
+        public AppParams(String cacheNamesCSV, int sleep, int iterationLimit) {
+            this.cacheNamesCSV = cacheNamesCSV;
             this.sleep = sleep;
             this.iterationLimit = iterationLimit;
         }
 
-        public String getCacheNames() {
-            return cacheNames;
+        public String getCacheNamesCSV() {
+            return cacheNamesCSV;
         }
 
-        @Option(defaultValue = "", longName = "caches")
+        public String[] getCacheNames() {
+            String[] names = null;
+            if (null != cacheNamesCSV) {
+                names = cacheNamesCSV.split(",");
+            }
+            return names;
+        }
+
+        @Option(defaultValue = "", longName = "caches", description = "comma-separated cache names, or keyword \"all\" to include all caches")
         public void setCacheNames(String cacheNames) {
-            this.cacheNames = cacheNames;
+            this.cacheNamesCSV = cacheNames;
         }
 
         public int getSleep() {
             return sleep;
         }
 
-        @Option(defaultValue = "" + SLEEP_DEFAULT, longName = "sleep")
+        @Option(defaultValue = "" + SLEEP_DEFAULT, longName = "sleep", description = "amount of time (ms) to sleep between size iterations")
         public void setSleep(int sleep) {
             this.sleep = sleep;
         }
@@ -132,7 +145,7 @@ public class cacheSize {
             return iterationLimit;
         }
 
-        @Option(defaultValue = "" + ITERATION_LIMIT_DEFAULT, longName = "iterations")
+        @Option(defaultValue = "" + ITERATION_LIMIT_DEFAULT, longName = "iterations", description = "amount of times to perform the cache size operation")
         public void setIterationLimit(int iterationLimit) {
             this.iterationLimit = iterationLimit;
         }
