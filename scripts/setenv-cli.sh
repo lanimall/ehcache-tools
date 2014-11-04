@@ -6,7 +6,7 @@
 
 
 ############ custom section based on what needs to be looked into #####################
-# extra custom classpath dependencies to add
+# extra custom classpath dependencies to add (: separated), such as the right ehcache / terracotta libs for example (based on the application you want to probe)
 CLASSPATH_PREFIX=
 
 # path to ehcache config

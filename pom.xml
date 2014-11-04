@@ -183,11 +183,13 @@
                     <groupId>net.sf.ehcache</groupId>
                     <artifactId>ehcache-ee</artifactId>
                     <version>${ehcache-ee.version}</version>
+                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.terracotta</groupId>
                     <artifactId>terracotta-toolkit-runtime-ee</artifactId>
                     <version>${toolkit.version}</version>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
         </profile>
@@ -206,11 +208,13 @@
                     <groupId>net.sf.ehcache</groupId>
                     <artifactId>ehcache-ee</artifactId>
                     <version>${ehcache-ee.version}</version>
+                    <scope>provided</scope>
                 </dependency>
                 <dependency>
                     <groupId>org.terracotta</groupId>
                     <artifactId>terracotta-toolkit-runtime-ee</artifactId>
                     <version>${toolkit.version}</version>
+                    <scope>provided</scope>
                 </dependency>
             </dependencies>
         </profile>
