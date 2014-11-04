@@ -20,8 +20,8 @@ done
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." > /dev/null; pwd`
 
-if [ -f "${BASEDIR}/bin/setenv.sh" ]; then
-  . "${BASEDIR}/bin/setenv.sh"
+if [ -f "${BASEDIR}/bin/setenv-cli.sh" ]; then
+  . "${BASEDIR}/bin/setenv-cli.sh"
 fi
 
 # OS specific support.  $var _must_ be set to either true or false.

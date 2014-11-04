@@ -17,8 +17,8 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 
-public class cacheElementPrint {
-    private static Logger log = LoggerFactory.getLogger(cacheElementPrint.class);
+public class cachePrint {
+    private static Logger log = LoggerFactory.getLogger(cachePrint.class);
     private static final boolean isDebug = log.isDebugEnabled();
 
     private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
@@ -26,12 +26,12 @@ public class cacheElementPrint {
 
     private final AppParams runParams;
 
-    public cacheElementPrint(final String cacheNames, final String cacheKeys, final String cacheKeysType) {
+    public cachePrint(final String cacheNames, final String cacheKeys, final String cacheKeysType) {
         Cli<AppParams> cli = CliFactory.createCliUsingInstance(new AppParams());
         this.runParams = cli.parseArguments("--caches", cacheNames, "--keys", cacheKeys, "--keysType", cacheKeysType);
     }
 
-    public cacheElementPrint(final AppParams params) {
+    public cachePrint(final AppParams params) {
         this.runParams = params;
     }
 
@@ -41,7 +41,7 @@ public class cacheElementPrint {
             params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
             try {
-                cacheElementPrint launcher = new cacheElementPrint(params);
+                cachePrint launcher = new cachePrint(params);
 
                 launcher.run();
 
@@ -199,8 +199,11 @@ public class cacheElementPrint {
     private boolean matchElementDateFilter(Element e) {
         boolean matched = false;
         if (null != e && null != runParams.getDate()) {
-            long dateTimeToCompare = runParams.getDate().getTime();
-            long elementDate = runParams.getCacheElementDateType().getCacheElementDate(e);
+            AppConstants.DateComparePrecision precision = runParams.getDateComparePrecision();
+
+            long dateTimeToCompare = precision.transformTimeWithPrecision(runParams.getDate()).getTime();
+            long elementDate = precision.transformTimeWithPrecision(new Date(runParams.getCacheElementDateType().getCacheElementDate(e))).getTime();
+
             matched = runParams.getDateCompareOperation().compare(elementDate, dateTimeToCompare);
         }
         return matched;
@@ -220,6 +223,7 @@ public class cacheElementPrint {
         private boolean dateTimeFilterEnabled;
         private AppConstants.CacheElementDateType cacheElementDateType;
         private AppConstants.DateCompareOperation dateCompareOperation;
+        private AppConstants.DateComparePrecision dateComparePrecision;
         private Date date;
 
         public AppParams() {
@@ -347,7 +351,7 @@ public class cacheElementPrint {
             return cacheElementDateType;
         }
 
-        @Option(defaultToNull = true, longName = "cacheElementDateType", description = "specify which cache element datetime to pick for comparison")
+        @Option(defaultToNull = true, longName = "cacheElementDateType", description = "specify which cache element datetime to pick for comparison (created, lastUpdated, lastAccessed, expireAt)")
         public void setCacheElementDateType(AppConstants.CacheElementDateType cacheElementDateType) {
             this.cacheElementDateType = cacheElementDateType;
         }
@@ -359,6 +363,15 @@ public class cacheElementPrint {
         @Option(defaultToNull = true, longName = "dateCompareOperation", description = "specify the date operation (before, after, equal) to perform between --cacheElementDateType and --datetime")
         public void setDateCompareOperation(AppConstants.DateCompareOperation dateCompareOperation) {
             this.dateCompareOperation = dateCompareOperation;
+        }
+
+        public AppConstants.DateComparePrecision getDateComparePrecision() {
+            return dateComparePrecision;
+        }
+
+        @Option(defaultValue = "second", longName = "datePrecision", description = "specify the date precision (second,minute,hour,day,month,year) to use for the comparison")
+        public void setDateComparePrecision(AppConstants.DateComparePrecision dateComparePrecision) {
+            this.dateComparePrecision = dateComparePrecision;
         }
 
         public Date getDate() {

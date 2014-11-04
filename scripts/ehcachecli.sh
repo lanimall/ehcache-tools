@@ -6,15 +6,18 @@
 
 case "$1" in
   ""|"--help"|"-h"|"-?")
-    echo "Syntax: $0 [cacheElementPrint|cacheSize|cacheClear|cacheDateClear|cacheObjectsInspect] [arguments.....]"
-    echo "cacheElementPrint - Prints cache elements for a given cache."
+    echo "Syntax: $0 [cachePrint|cacheSize|cacheClear|cacheSelectiveClear|cacheInspect|tcPing] [arguments.....]"
+    echo "cachePrint - Prints cache elements for a given cache."
     echo "cacheSize - Prints the total number of cache entries in each cache in a continous loop."
     echo "cacheClear - Clear 1 or more cache entries in specified cache or all caches."
-    echo "cacheDateClear - Clear all cache entries that match the date filter query"
-    echo "cacheObjectsInspect - Inspect cache objects stored in cache and print size statistics"
+    echo "cacheSelectiveClear - Clear all cache entries that match the date filter query"
+    echo "cacheInspect - Inspect cache objects (keys and values) stored in cache and print types and size statistics"
     echo "tcPing - Health Check of the cluster"
     exit
     ;;
+  "tcPing")
+    echo "For tcPing, it's best to use the pre-configured ehcacheping.sh script"
+    exit;;
 esac
 
 # resolve links - $0 may be a softlink
@@ -33,8 +36,8 @@ done
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." > /dev/null; pwd`
 
-if [ -f "${BASEDIR}/bin/setenv.sh" ]; then
-  . "${BASEDIR}/bin/setenv.sh"
+if [ -f "${BASEDIR}/bin/setenv-cli.sh" ]; then
+  . "${BASEDIR}/bin/setenv-cli.sh"
 fi
 
 # OS specific support.  $var _must_ be set to either true or false.

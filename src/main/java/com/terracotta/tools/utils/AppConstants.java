@@ -5,7 +5,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.GregorianCalendar;
 
 /**
  * Created by FabienSanglier on 9/25/14.
@@ -18,6 +20,10 @@ public class AppConstants {
 
     public static final boolean useKeyWithExpiryCheck = System.getProperties().containsKey(CONFIG_USEKEYWITHEXPIRYCHECK);
     public static final String PARAMS_ALL = "all";
+
+    public enum CacheFilterType {
+        datetime, size
+    }
 
     public enum CacheElementDateType {
         created {
@@ -34,6 +40,11 @@ public class AppConstants {
             @Override
             public long getCacheElementDate(Element e) {
                 return e.getLastAccessTime();
+            }
+        }, expireAt {
+            @Override
+            public long getCacheElementDate(Element e) {
+                return e.getExpirationTime();
             }
         };
 
@@ -96,6 +107,116 @@ public class AppConstants {
             }
             return sw.toString();
         }
+    }
+
+    ;
+
+    public enum DateComparePrecision {
+        millisecond {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                return datetime;
+            }
+        }, second {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                if (roundClosest)
+                    date.add(Calendar.MILLISECOND, 500);
+
+                date.set(Calendar.MILLISECOND, 0);
+                return date.getTime();
+            }
+        }, minute {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                date.set(Calendar.MILLISECOND, 0);
+
+                if (roundClosest)
+                    date.add(Calendar.SECOND, 30);
+
+                date.set(Calendar.SECOND, 0);
+                return date.getTime();
+            }
+        }, hour {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                date.set(Calendar.MILLISECOND, 0);
+                date.set(Calendar.SECOND, 0);
+
+                if (roundClosest)
+                    date.add(Calendar.MINUTE, 30);
+
+                date.set(Calendar.MINUTE, 0);
+                return date.getTime();
+            }
+        }, day {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                date.set(Calendar.MILLISECOND, 0);
+                date.set(Calendar.SECOND, 0);
+                date.set(Calendar.MINUTE, 0);
+
+                if (roundClosest)
+                    date.add(Calendar.HOUR_OF_DAY, 12);
+
+                date.set(Calendar.HOUR_OF_DAY, 0);
+                return date.getTime();
+            }
+        }, month {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                date.set(Calendar.MILLISECOND, 0);
+                date.set(Calendar.SECOND, 0);
+                date.set(Calendar.MINUTE, 0);
+                date.set(Calendar.HOUR_OF_DAY, 0);
+
+                //that one is a bit tricky as some month have 30 or 31 days...but not critical to fix here for now
+                if (roundClosest)
+                    date.add(Calendar.DAY_OF_MONTH, 15);
+
+                date.set(Calendar.DAY_OF_MONTH, 0);
+                return date.getTime();
+            }
+        }, year {
+            @Override
+            public Date transformTimeWithPrecision(Date datetime, boolean roundClosest) {
+                Calendar date = new GregorianCalendar();
+                date.setTime(datetime);
+
+                date.set(Calendar.MILLISECOND, 0);
+                date.set(Calendar.SECOND, 0);
+                date.set(Calendar.MINUTE, 0);
+                date.set(Calendar.HOUR_OF_DAY, 0);
+                date.set(Calendar.DAY_OF_MONTH, 0);
+
+                if (roundClosest)
+                    date.add(Calendar.MONTH, 6);
+
+                date.set(Calendar.MONTH, 0);
+                return date.getTime();
+            }
+        };
+
+        public Date transformTimeWithPrecision(Date datetime) {
+            return transformTimeWithPrecision(datetime, false);
+        }
+
+        public abstract Date transformTimeWithPrecision(Date datetime, boolean roundClosest);
     }
 
     ;

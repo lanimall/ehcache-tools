@@ -60,7 +60,7 @@ public class cacheClear {
                         int it = 0;
                         while (it < CHECK_ITERATION_LIMIT_DEFAULT) {
                             System.out.println(String.format("---------------- Iteration %d ----------------", it + 1));
-                            new cacheElementPrint(cache.getName(), runParams.getCacheKeysCSV(), runParams.getCacheKeysType().getTypeString()).run();
+                            new cachePrint(cache.getName(), runParams.getCacheKeysCSV(), runParams.getCacheKeysType().getTypeString()).run();
                             Thread.sleep(CHECK_ITERATION_SLEEP_DEFAULT);
                             it++;
                         }

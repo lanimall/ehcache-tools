@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
 
-public class cacheObjectsInspect {
-    private static Logger log = LoggerFactory.getLogger(cacheObjectsInspect.class);
+public class cacheInspect {
+    private static Logger log = LoggerFactory.getLogger(cacheInspect.class);
     private static final boolean isDebug = log.isDebugEnabled();
 
     private static final int DEFAULT_SAMPLEDSIZE = 1000;
@@ -67,7 +67,7 @@ public class cacheObjectsInspect {
         }
     }
 
-    public cacheObjectsInspect(final AppParams params) {
+    public cacheInspect(final AppParams params) {
         this.runParams = params;
 
         if (null == runParams.getCacheNames() || runParams.getCacheNames().length == 0) {
@@ -301,7 +301,7 @@ public class cacheObjectsInspect {
             params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
             try {
-                cacheObjectsInspect launcher = new cacheObjectsInspect(params);
+                cacheInspect launcher = new cacheInspect(params);
 
                 launcher.run();
 

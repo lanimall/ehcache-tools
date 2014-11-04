@@ -20,8 +20,8 @@ done
 PRGDIR=`dirname "$PRG"`
 BASEDIR=`cd "$PRGDIR/.." > /dev/null; pwd`
 
-if [ -f "${BASEDIR}/bin/setenv.sh" ]; then
-  . "${BASEDIR}/bin/setenv.sh"
+if [ -f "${BASEDIR}/bin/setenv-tcping.sh" ]; then
+  . "${BASEDIR}/bin/setenv-tcping"
 fi
 
 if [ "x$TC_CONNECT_URL" == "x" ]; then

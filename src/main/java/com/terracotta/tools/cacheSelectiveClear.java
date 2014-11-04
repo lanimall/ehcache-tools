@@ -19,8 +19,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class cacheDateClear {
-    private static Logger log = LoggerFactory.getLogger(cacheDateClear.class);
+public class cacheSelectiveClear {
+    private static Logger log = LoggerFactory.getLogger(cacheSelectiveClear.class);
     private static final boolean isDebug = log.isDebugEnabled();
 
     private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyyMMdd");
@@ -29,7 +29,7 @@ public class cacheDateClear {
     private final ExecutorService cacheFetchService;
     private final AppParams runParams;
 
-    public cacheDateClear(final AppParams params) {
+    public cacheSelectiveClear(final AppParams params) {
         this.runParams = params;
 
         if (null == runParams.getCacheNames() || runParams.getCacheNames().length == 0) {
@@ -128,13 +128,17 @@ public class cacheDateClear {
         private final long dateTimeTocompare;
         private final AppConstants.CacheElementDateType cacheElementDateType;
         private final AppConstants.DateCompareOperation dateCompareOperation;
+        private final AppConstants.DateComparePrecision precision;
 
         private final ExecutorService cacheGetsPool;
         private final CompletionService<Integer> cacheGetCompletionService;
 
         public CacheOp(Cache myCache, AppConstants.CacheElementDateType cacheElementDateType, AppConstants.DateCompareOperation dateCompareOperation, long dateTimeTocompare) {
             this.myCache = myCache;
-            this.dateTimeTocompare = dateTimeTocompare;
+
+            this.precision = runParams.getDateComparePrecision();
+            this.dateTimeTocompare = precision.transformTimeWithPrecision(new Date(dateTimeTocompare)).getTime();
+
             this.cacheElementDateType = cacheElementDateType;
             this.dateCompareOperation = dateCompareOperation;
 
@@ -201,7 +205,7 @@ public class cacheDateClear {
 
             private boolean matchElementDateFilter(Element e) {
                 boolean matched = false;
-                long elementDate = cacheElementDateType.getCacheElementDate(e);
+                long elementDate = precision.transformTimeWithPrecision(new Date(cacheElementDateType.getCacheElementDate(e))).getTime();
                 return dateCompareOperation.compare(elementDate, dateTimeTocompare);
             }
         }
@@ -237,7 +241,7 @@ public class cacheDateClear {
             params = CliFactory.parseArgumentsUsingInstance(new AppParams(), args);
 
             try {
-                cacheDateClear launcher = new cacheDateClear(params);
+                cacheSelectiveClear launcher = new cacheSelectiveClear(params);
 
                 launcher.run();
 
@@ -262,6 +266,7 @@ public class cacheDateClear {
         private String cacheNamesCSV;
         private AppConstants.CacheElementDateType cacheElementDateType;
         private AppConstants.DateCompareOperation dateCompareOperation;
+        private AppConstants.DateComparePrecision dateComparePrecision;
         private Date date;
         private boolean useThreading;
         private int cacheThreadCounts;
@@ -302,6 +307,15 @@ public class cacheDateClear {
         @Option(longName = "dateCompareOperation", description = "specify the date operation (before, after, equal) to perform between --cacheElementDateType and --datetime")
         public void setDateCompareOperation(AppConstants.DateCompareOperation dateCompareOperation) {
             this.dateCompareOperation = dateCompareOperation;
+        }
+
+        public AppConstants.DateComparePrecision getDateComparePrecision() {
+            return dateComparePrecision;
+        }
+
+        @Option(defaultValue = "second", longName = "datePrecision", description = "specify the date precision (second,minute,hour,day,month,year) to use for the comparison")
+        public void setDateComparePrecision(AppConstants.DateComparePrecision dateComparePrecision) {
+            this.dateComparePrecision = dateComparePrecision;
         }
 
         public boolean isUseThreading() {
