@@ -25,66 +25,47 @@ public class cacheInspect {
     private static Logger log = LoggerFactory.getLogger(cacheInspect.class);
     private static final boolean isDebug = log.isDebugEnabled();
 
-    private static final int DEFAULT_SAMPLEDSIZE = 1000;
-    private static final int DEFAULT_CACHEPOOLSIZE = 2;
-
-    public static final String CONFIG_NO_UNSERIALIZED_SIZE = "noUnSerializedSize";
-    public static final String CONFIG_NO_SERIALIZED_SIZE = "noSerializedSize";
-
-    public static final String CONFIG_USETHREADING = "useThreading";
-    public static final String CONFIG_CACHEPOOLSIZE = "cachePoolSize";
-    public static final String CONFIG_SIZEOFTYPE = "sizeOfType";
-
-    private final boolean useThreading = System.getProperties().containsKey(CONFIG_USETHREADING);
-
-    private final boolean noSerializedSize = System.getProperties().containsKey(CONFIG_NO_SERIALIZED_SIZE);
-    private final boolean noUnSerializedSize = System.getProperties().containsKey(CONFIG_NO_UNSERIALIZED_SIZE);
-
-    private final String sCachePoolSize = System.getProperty(CONFIG_CACHEPOOLSIZE, new Integer(DEFAULT_CACHEPOOLSIZE).toString());
-
     private final AppParams runParams;
     private final ExecutorService cacheFetchService;
     //private final ExecutorService cacheGetService;
 
     //agent (DEFAULT), reflection, unsafe
-    private static final SizeOf sizeOf;
+    private final SizeOf sizeOf;
 
-    static {
-        String sizeOfType = System.getProperty(CONFIG_SIZEOFTYPE);
-        if (null == sizeOfType) {
-            sizeOf = new net.sf.ehcache.pool.sizeof.AgentSizeOf(new PassThroughFilter(), true);
-        } else {
-            sizeOfType = sizeOfType.toLowerCase();
-            if ("reflection".equals(sizeOfType)) {
-                sizeOf = new net.sf.ehcache.pool.sizeof.ReflectionSizeOf(new PassThroughFilter(), true);
-            } else if ("agent".equals(sizeOfType)) {
-                sizeOf = new net.sf.ehcache.pool.sizeof.AgentSizeOf(new PassThroughFilter(), true);
-            } else if ("unsafe".equals(sizeOfType)) {
-                sizeOf = new net.sf.ehcache.pool.sizeof.UnsafeSizeOf(new PassThroughFilter(), true);
-            } else {
-                sizeOf = new net.sf.ehcache.pool.sizeof.AgentSizeOf(new PassThroughFilter(), true);
+    public enum SizeOfType {
+        reflection {
+            @Override
+            public SizeOf getSizeOfEngine() {
+                return new net.sf.ehcache.pool.sizeof.ReflectionSizeOf(new PassThroughFilter(), true);
             }
-        }
+        }, agent {
+            @Override
+            public SizeOf getSizeOfEngine() {
+                return new net.sf.ehcache.pool.sizeof.AgentSizeOf(new PassThroughFilter(), true);
+            }
+        }, unsafe {
+            @Override
+            public SizeOf getSizeOfEngine() {
+                return new net.sf.ehcache.pool.sizeof.UnsafeSizeOf(new PassThroughFilter(), true);
+            }
+        };
+
+        public abstract SizeOf getSizeOfEngine();
     }
 
     public cacheInspect(final AppParams params) {
         this.runParams = params;
 
-        if (null == runParams.getCacheNames() || runParams.getCacheNames().length == 0) {
-            throw new IllegalArgumentException("No cache specified...");
+        if (runParams.getCacheNamesCSV() == null || "".equals(runParams.getCacheNamesCSV())) {
+            throw new IllegalArgumentException("No cache name defined. Doing nothing.");
         }
 
         if (runParams.getSamplingSize() <= 0)
             throw new IllegalArgumentException("Sampled size should be > 0");
 
-        int cachePoolSize;
-        try {
-            cachePoolSize = Integer.parseInt(sCachePoolSize);
-        } catch (NumberFormatException e) {
-            cachePoolSize = DEFAULT_CACHEPOOLSIZE;
-        }
+        this.sizeOf = runParams.getSizeOfType().getSizeOfEngine();
 
-        this.cacheFetchService = Executors.newCachedThreadPool(new NamedThreadFactory("Cache Sizing Pool"));
+        this.cacheFetchService = Executors.newFixedThreadPool(runParams.getCachePoolSize(), new NamedThreadFactory("Cache Sizing Pool"));
     }
 
     @Override
@@ -94,10 +75,18 @@ public class cacheInspect {
     }
 
     public void run() {
-        if (useThreading) {
-            findThreadingObjectSizesInCache();
+        String[] cname;
+        if (AppConstants.PARAMS_ALL.equalsIgnoreCase(runParams.getCacheNamesCSV())) {
+            System.out.println("Requested to get size for all caches...");
+            cname = CacheFactory.getInstance().getCacheManager().getCacheNames();
         } else {
-            findSerialObjectSizesInCache();
+            cname = runParams.getCacheNames();
+        }
+
+        if (runParams.isUseThreading()) {
+            findThreadingObjectSizesInCache(cname);
+        } else {
+            findSerialObjectSizesInCache(cname);
         }
     }
 
@@ -105,10 +94,11 @@ public class cacheInspect {
         CacheFactory.getInstance().getCacheManager().shutdown();
     }
 
-    private void findThreadingObjectSizesInCache() {
+    private void findThreadingObjectSizesInCache(String[] cacheNames) {
         Future<Map<CacheStatsDefinition, CacheSizeStats>> futs[] = new Future[runParams.getCacheNames().length];
         int cacheCount = 0;
-        for (String cacheName : runParams.getCacheNames()) {
+
+        for (String cacheName : cacheNames) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
             futs[cacheCount++] = cacheFetchService.submit(new CacheFetchOp(myCache));
         }
@@ -137,10 +127,10 @@ public class cacheInspect {
         }
     }
 
-    private void findSerialObjectSizesInCache() {
+    private void findSerialObjectSizesInCache(String[] cacheNames) {
 
         Map<CacheStatsDefinition, CacheSizeStats> cacheStats = null;
-        for (String cacheName : runParams.getCacheNames()) {
+        for (String cacheName : cacheNames) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
             cacheStats = new CacheFetchOp(myCache).call();
 
@@ -194,7 +184,7 @@ public class cacheInspect {
                         String objType = getObjectType(objKey);
 
                         //serialized case
-                        if (!noSerializedSize) {
+                        if (runParams.isPrintSerializedSize()) {
                             byte[] serializedSize = SerializationUtils.serialize((Serializable) objKey);
                             add(CacheStatsDefinition.key_serialized(myCache.getName()), cacheStats, serializedSize.length, objType);
 
@@ -204,7 +194,7 @@ public class cacheInspect {
                         }
 
                         //unserialized case
-                        if (!noUnSerializedSize) {
+                        if (runParams.isPrintUnSerializedSize()) {
                             long objectOnHeapSize = sizeOf.deepSizeOf(Integer.MAX_VALUE, true, objKey).getCalculated();
                             add(CacheStatsDefinition.key_unserialized(myCache.getName()), cacheStats, objectOnHeapSize, objType);
 
@@ -218,7 +208,7 @@ public class cacheInspect {
                         String objType = getObjectType(objValue);
 
                         //serialized case
-                        if (!noSerializedSize) {
+                        if (runParams.isPrintSerializedSize()) {
                             byte[] serializedSize = SerializationUtils.serialize((Serializable) objValue);
                             add(CacheStatsDefinition.value_serialized(myCache.getName()), cacheStats, serializedSize.length, objType);
 
@@ -228,7 +218,7 @@ public class cacheInspect {
                         }
 
                         //unserialized case
-                        if (!noUnSerializedSize) {
+                        if (runParams.isPrintUnSerializedSize()) {
                             long objectOnHeapSize = sizeOf.deepSizeOf(Integer.MAX_VALUE, true, objValue).getCalculated();
                             add(CacheStatsDefinition.value_unserialized(myCache.getName()), cacheStats, objectOnHeapSize, objType);
 
@@ -325,6 +315,11 @@ public class cacheInspect {
     public static class AppParams extends BaseAppParams {
         private String cacheNamesCSV;
         private int samplingSize;
+        private boolean printUnSerializedSize;
+        private boolean printSerializedSize;
+        private boolean useThreading;
+        private int cachePoolSize;
+        private SizeOfType sizeOfType;
 
         public AppParams() {
         }
@@ -350,9 +345,54 @@ public class cacheInspect {
             return samplingSize;
         }
 
-        @Option(longName = "samplingSize", defaultValue = "" + DEFAULT_SAMPLEDSIZE, description = "amount of objects to sample for the size calculations")
+        @Option(longName = "samplingSize", defaultValue = "100", description = "amount of objects to sample for the size calculations", minimum = 1, maximum = 10000)
         public void setSamplingSize(int samplingSize) {
             this.samplingSize = samplingSize;
+        }
+
+        public boolean isPrintUnSerializedSize() {
+            return printUnSerializedSize;
+        }
+
+        @Option(longName = "printUnSerializedSize", defaultValue = "true")
+        public void setPrintUnSerializedSize(boolean printUnSerializedSize) {
+            this.printUnSerializedSize = printUnSerializedSize;
+        }
+
+        public boolean isPrintSerializedSize() {
+            return printSerializedSize;
+        }
+
+        @Option(longName = "printSerializedSize", defaultValue = "true")
+        public void setPrintSerializedSize(boolean printSerializedSize) {
+            this.printSerializedSize = printSerializedSize;
+        }
+
+        public boolean isUseThreading() {
+            return useThreading;
+        }
+
+        @Option(longName = "useThreading", defaultValue = "true")
+        public void setUseThreading(boolean useThreading) {
+            this.useThreading = useThreading;
+        }
+
+        public int getCachePoolSize() {
+            return cachePoolSize;
+        }
+
+        @Option(longName = "cachePoolSize", defaultValue = "4", minimum = 1, maximum = 16)
+        public void setCachePoolSize(int cachePoolSize) {
+            this.cachePoolSize = cachePoolSize;
+        }
+
+        public SizeOfType getSizeOfType() {
+            return sizeOfType;
+        }
+
+        @Option(longName = "sizeOfType", defaultValue = "agent")
+        public void setSizeOfType(SizeOfType sizeOfType) {
+            this.sizeOfType = sizeOfType;
         }
     }
 }

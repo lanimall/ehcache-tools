@@ -12,6 +12,7 @@ case "$1" in
     echo "cacheClear - Clear 1 or more cache entries in specified cache or all caches."
     echo "cacheSelectiveClear - Clear all cache entries that match the date filter query"
     echo "cacheInspect - Inspect cache objects (keys and values) stored in cache and print types and size statistics"
+    echo "cacheMgrConnect - Simple cache manager instantiation with no operation performed (useful to see caches in TMC for example)"
     echo "tcPing - Health Check of the cluster"
     exit
     ;;
