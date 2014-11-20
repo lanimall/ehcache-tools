@@ -13,6 +13,7 @@ case "$1" in
     echo "cacheSelectiveClear - Clear all cache entries that match the date filter query"
     echo "cacheInspect - Inspect cache objects (keys and values) stored in cache and print types and size statistics"
     echo "cacheMgrConnect - Simple cache manager instantiation with no operation performed (useful to see caches in TMC for example)"
+    echo "cacheRefresh - Get all objects in cache, and re-put them (hence refreshing creation time and expirations...)"
     echo "tcPing - Health Check of the cluster"
     exit
     ;;

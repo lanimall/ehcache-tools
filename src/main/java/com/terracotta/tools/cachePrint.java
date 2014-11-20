@@ -89,7 +89,6 @@ public class cachePrint {
 
                 int keyInCacheCount = printElements(cache, cacheKeyList);
 
-
                 if (runParams.isDateTimeFilterEnabled()) {
                     System.out.println(String.format("Date Filtering enabled. Printed only the elements matching the filter = %d", keyInCacheCount));
                 } else {
@@ -151,27 +150,27 @@ public class cachePrint {
             Element e = cache.getQuiet(key);
             if (!runParams.isDateTimeFilterEnabled() || (runParams.isDateTimeFilterEnabled() && matchElementDateFilter(e))) {
                 if (e != null) {
-                    sw.append("key").append("=").append((null != e.getObjectKey()) ? e.getObjectKey().toString() : "null");
-                    sw.append(",").append("in-cache").append("=").append(Boolean.toString(true));
+                    sw.append((null != e.getObjectKey()) ? e.getObjectKey().toString() : "null");
+                    sw.append(",").append(Boolean.toString(true));
                     if (runParams.isPrintKeyType())
-                        sw.append(",").append("type").append("=").append((null != e.getObjectKey()) ? e.getObjectKey().getClass().getName() : "null");
+                        sw.append(",").append((null != e.getObjectKey()) ? e.getObjectKey().getClass().getName() : "null");
                     if (runParams.isPrintSerializedSize())
-                        sw.append(",").append("serialized-size").append("=").append(new Long(e.getSerializedSize()).toString());
+                        sw.append(",").append(new Long(e.getSerializedSize()).toString());
                     if (runParams.isPrintCreationTime())
-                        sw.append(",").append("created").append("=").append(dateTimeFormatter.format(new Date(e.getCreationTime())));
+                        sw.append(",").append(dateTimeFormatter.format(new Date(e.getCreationTime())));
                     if (runParams.isPrintLastUpdatedTime())
-                        sw.append(",").append("updated").append("=").append(dateTimeFormatter.format(new Date(e.getLastUpdateTime())));
+                        sw.append(",").append(dateTimeFormatter.format(new Date(e.getLastUpdateTime())));
                     if (runParams.isPrintLastAccessedTime())
-                        sw.append(",").append("last accessed").append("=").append(dateTimeFormatter.format(new Date(e.getLastAccessTime())));
+                        sw.append(",").append(dateTimeFormatter.format(new Date(e.getLastAccessTime())));
                     if (runParams.isPrintExpirationTime())
-                        sw.append(",").append("expire").append("=").append(dateTimeFormatter.format(new Date(e.getExpirationTime())));
+                        sw.append(",").append(dateTimeFormatter.format(new Date(e.getExpirationTime())));
                     if (runParams.isPrintValue())
-                        sw.append(",").append("value").append("=").append(e.getObjectValue().toString());
+                        sw.append(",").append(e.getObjectValue().toString());
 
                     keyInCacheCount++;
                 } else {
-                    sw.append("key").append("=").append((null != key) ? key.toString() : "null");
-                    sw.append(",").append("in-cache").append("=").append(Boolean.toString(false));
+                    sw.append((null != key) ? key.toString() : "null");
+                    sw.append(",").append(Boolean.toString(false));
 
                     //append commas here just to be CSV compliant
                     if (runParams.isPrintKeyType())
