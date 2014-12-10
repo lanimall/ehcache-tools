@@ -112,4 +112,4 @@ fi
 exec "$JAVACMD" ${JAVA_OPTS} \
   -classpath "$CLASSPATH" \
   -Dbasedir="$BASEDIR" \
-  com.terracotta.tools.cacheObjectsInspect "$@"
+  com.terracotta.tools.cacheInspect "$@"
