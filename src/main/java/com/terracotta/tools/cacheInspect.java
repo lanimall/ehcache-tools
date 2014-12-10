@@ -10,7 +10,7 @@ import net.sf.ehcache.CacheException;
 import net.sf.ehcache.Element;
 import net.sf.ehcache.pool.sizeof.SizeOf;
 import net.sf.ehcache.pool.sizeof.filter.PassThroughFilter;
-import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang3.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,7 +83,7 @@ public class cacheInspect {
             cname = runParams.getCacheNames();
         }
 
-        if (runParams.isUseThreading()) {
+        if (!runParams.isNoThreading()) {
             findThreadingObjectSizesInCache(cname);
         } else {
             findSerialObjectSizesInCache(cname);
@@ -100,7 +100,8 @@ public class cacheInspect {
 
         for (String cacheName : cacheNames) {
             Cache myCache = CacheFactory.getInstance().getCache(cacheName);
-            futs[cacheCount++] = cacheFetchService.submit(new CacheFetchOp(myCache));
+            futs[cacheCount] = cacheFetchService.submit(new CacheFetchOp(myCache));
+            cacheCount++;
         }
 
         for (int i = 0; i < cacheCount; i++) {
@@ -317,7 +318,7 @@ public class cacheInspect {
         private int samplingSize;
         private boolean printUnSerializedSize;
         private boolean printSerializedSize;
-        private boolean useThreading;
+        private boolean noThreading;
         private int cachePoolSize;
         private SizeOfType sizeOfType;
 
@@ -368,13 +369,13 @@ public class cacheInspect {
             this.printSerializedSize = printSerializedSize;
         }
 
-        public boolean isUseThreading() {
-            return useThreading;
+        public boolean isNoThreading() {
+            return noThreading;
         }
 
-        @Option(longName = "useThreading", defaultValue = "true")
-        public void setUseThreading(boolean useThreading) {
-            this.useThreading = useThreading;
+        @Option(longName = "noThreading")
+        public void setNoThreading(boolean noThreading) {
+            this.noThreading = noThreading;
         }
 
         public int getCachePoolSize() {
